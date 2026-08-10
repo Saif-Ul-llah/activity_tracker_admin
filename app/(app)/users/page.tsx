@@ -269,6 +269,7 @@ function EditUserModal({
   const [fullName, setFullName] = useState(user.fullName);
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
+  const [confirmDel, setConfirmDel] = useState(false);
 
   async function save() {
     setErr("");
@@ -279,6 +280,19 @@ function EditUserModal({
     } catch (e: any) {
       setErr(e.message);
       setBusy(false);
+    }
+  }
+
+  async function remove() {
+    setErr("");
+    setBusy(true);
+    try {
+      await api.deleteUser(user.id);
+      onSaved();
+    } catch (e: any) {
+      setErr(e.message);
+      setBusy(false);
+      setConfirmDel(false);
     }
   }
 
@@ -311,21 +325,56 @@ function EditUserModal({
         Account active
       </label>
       {err && <p className="text-xs text-crit mt-3">{err}</p>}
-      <div className="flex gap-2 mt-5">
-        <button
-          onClick={save}
-          disabled={busy}
-          className="flex-1 py-2 rounded-lg bg-brand text-white text-sm font-medium disabled:opacity-50"
-        >
-          {busy ? "Saving…" : "Save changes"}
-        </button>
-        <button
-          onClick={onClose}
-          className="px-4 py-2 rounded-lg border border-border text-sm text-muted"
-        >
-          Cancel
-        </button>
-      </div>
+
+      {confirmDel ? (
+        <div className="mt-5 p-3 rounded-xl border border-crit/30 bg-crit/10">
+          <p className="text-xs text-ink mb-3">
+            Permanently delete <strong>{user.email}</strong> and all of their
+            devices, activity, and screenshots (incl. R2 objects)? This cannot be
+            undone.
+          </p>
+          <div className="flex gap-2">
+            <button
+              onClick={remove}
+              disabled={busy}
+              className="flex-1 py-2 rounded-lg bg-crit text-white text-sm font-semibold disabled:opacity-50"
+            >
+              {busy ? "Deleting…" : "Yes, delete everything"}
+            </button>
+            <button
+              onClick={() => setConfirmDel(false)}
+              disabled={busy}
+              className="px-4 py-2 rounded-lg border border-border text-sm text-muted"
+            >
+              Keep
+            </button>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="flex gap-2 mt-5">
+            <button
+              onClick={save}
+              disabled={busy}
+              className="flex-1 py-2 rounded-lg bg-brand text-white text-sm font-medium disabled:opacity-50"
+            >
+              {busy ? "Saving…" : "Save changes"}
+            </button>
+            <button
+              onClick={onClose}
+              className="px-4 py-2 rounded-lg border border-border text-sm text-muted"
+            >
+              Cancel
+            </button>
+          </div>
+          <button
+            onClick={() => setConfirmDel(true)}
+            className="w-full mt-2 py-2 rounded-lg text-sm font-medium text-crit hover:bg-crit/10 transition-colors"
+          >
+            Delete user
+          </button>
+        </>
+      )}
     </Modal>
   );
 }

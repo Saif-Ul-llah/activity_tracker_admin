@@ -79,6 +79,23 @@ export const api = {
     call<UserRow>(`/api/admin/users`, { method: "POST", body: b }),
   updateUser: (id: string, b: Partial<NewUser> & { isActive?: boolean }) =>
     call<UserRow>(`/api/admin/users/${id}`, { method: "PATCH", body: b }),
+  deleteUser: (id: string) =>
+    call<{ user: number; devices: number; segments: number; screenshots: number; events: number }>(
+      `/api/admin/users/${id}`,
+      { method: "DELETE" }
+    ),
+  clearActivity: (b: {
+    deviceId?: string;
+    userId?: string;
+    app?: string;
+    from?: number;
+    to?: number;
+    all?: boolean;
+  }) =>
+    call<{ deleted: number }>(`/api/admin/activity/delete`, {
+      method: "POST",
+      body: b,
+    }),
   devices: () => call<DeviceRow[]>(`/api/admin/devices`),
   revokeDevice: (id: string, revoked: boolean) =>
     call<{ id: string; revoked: boolean }>(`/api/admin/devices/${id}/revoke`, {

@@ -8,3 +8,4 @@
 .vercel
 next-env.d.ts
 tsconfig.tsbuildinfo
+squashfs-root

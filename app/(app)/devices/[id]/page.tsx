@@ -27,6 +27,7 @@ export default function DeviceDetailPage() {
   const [act, setAct] = useState<ActivityResp | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [refreshTick, setRefreshTick] = useState(0);
 
   useEffect(() => {
     // Device meta comes from the fleet list (no per-id endpoint needed).
@@ -49,7 +50,7 @@ export default function DeviceDetailPage() {
     return () => {
       alive = false;
     };
-  }, [id, range]);
+  }, [id, range, refreshTick]);
 
   const k = ov?.kpis;
 
@@ -233,7 +234,128 @@ export default function DeviceDetailPage() {
           </>
         )}
       </DataState>
+
+      {device && (
+        <ClearHistory
+          deviceId={id}
+          apps={(act?.byApp ?? []).map((a) => a.app)}
+          onCleared={() => setRefreshTick((t) => t + 1)}
+        />
+      )}
     </Page>
+  );
+}
+
+function ClearHistory({
+  deviceId,
+  apps,
+  onCleared,
+}: {
+  deviceId: string;
+  apps: string[];
+  onCleared: () => void;
+}) {
+  const DAY = 86400000;
+  const [span, setSpan] = useState<"all" | "7" | "30">("all");
+  const [app, setApp] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [confirm, setConfirm] = useState(false);
+  const [msg, setMsg] = useState("");
+
+  async function run() {
+    setBusy(true);
+    setMsg("");
+    try {
+      const body: {
+        deviceId: string;
+        app?: string;
+        to?: number;
+      } = { deviceId };
+      if (app) body.app = app;
+      if (span === "7") body.to = Date.now() - 7 * DAY;
+      if (span === "30") body.to = Date.now() - 30 * DAY;
+      const res = await api.clearActivity(body);
+      setMsg(`Cleared ${res.deleted.toLocaleString()} activity segments.`);
+      setConfirm(false);
+      onCleared();
+    } catch (e: any) {
+      setMsg(e.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const label =
+    (app ? `"${app}" ` : "") +
+    (span === "all"
+      ? "activity history"
+      : `activity older than ${span} days`);
+
+  return (
+    <Card
+      title="Clear history"
+      subtitle="Permanently delete this device's activity segments"
+      className="mt-4 border-crit/20"
+    >
+      {msg && <p className="text-sm text-brand mb-3">{msg}</p>}
+      <div className="flex flex-wrap items-end gap-3">
+        <div>
+          <label className="block text-[11px] uppercase tracking-wide text-faint mb-1">
+            Time range
+          </label>
+          <select
+            value={span}
+            onChange={(e) => setSpan(e.target.value as any)}
+            className="px-3 py-2 rounded-xl bg-surface-2 border border-border text-sm text-ink outline-none"
+          >
+            <option value="all">All history</option>
+            <option value="7">Older than 7 days</option>
+            <option value="30">Older than 30 days</option>
+          </select>
+        </div>
+        <div>
+          <label className="block text-[11px] uppercase tracking-wide text-faint mb-1">
+            App
+          </label>
+          <select
+            value={app}
+            onChange={(e) => setApp(e.target.value)}
+            className="px-3 py-2 rounded-xl bg-surface-2 border border-border text-sm text-ink outline-none min-w-[160px]"
+          >
+            <option value="">All apps</option>
+            {apps.map((a) => (
+              <option key={a} value={a}>
+                {a}
+              </option>
+            ))}
+          </select>
+        </div>
+        {confirm ? (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={run}
+              disabled={busy}
+              className="px-3.5 py-2 rounded-xl bg-crit text-white text-xs font-semibold disabled:opacity-50"
+            >
+              {busy ? "Clearing…" : `Confirm — delete ${label}`}
+            </button>
+            <button
+              onClick={() => setConfirm(false)}
+              className="px-3 py-2 rounded-xl border border-border text-xs text-muted"
+            >
+              Cancel
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setConfirm(true)}
+            className="px-3.5 py-2 rounded-xl text-xs font-semibold text-crit border border-crit/30 bg-crit/10 hover:bg-crit/20 transition-colors"
+          >
+            Clear {label}
+          </button>
+        )}
+      </div>
+    </Card>
   );
 }
 
