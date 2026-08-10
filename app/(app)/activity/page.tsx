@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { api, ActivityResp, DeviceRow, Segment } from "@/lib/api";
 import { Page, PageHeader, RangeKey, rangeFor, Select } from "@/components/Controls";
-import { Card, DataState, StatePill, ActivityMeter } from "@/components/ui";
+import { Card, DataState, StatePill, ActivityMeter, Pager } from "@/components/ui";
 import { TopAppsBar } from "@/components/charts";
 import { fmtDuration, fmtDateTime } from "@/lib/format";
 
@@ -22,28 +22,38 @@ function ActivityInner() {
   const params = useSearchParams();
   const [deviceId, setDeviceId] = useState(params.get("deviceId") || "");
   const [range, setRange] = useState<RangeKey>("7d");
+  const [page, setPage] = useState(1);
   const [devices, setDevices] = useState<DeviceRow[]>([]);
   const [data, setData] = useState<ActivityResp | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const LIMIT = 50;
 
   useEffect(() => {
     api.devices().then(setDevices).catch(() => {});
   }, []);
+
+  // Reset to page 1 when filters change.
+  useEffect(() => setPage(1), [range, deviceId]);
 
   useEffect(() => {
     let alive = true;
     setLoading(true);
     setError(null);
     api
-      .activity({ ...rangeFor(range), deviceId: deviceId || undefined, limit: 100 })
+      .activity({
+        ...rangeFor(range),
+        deviceId: deviceId || undefined,
+        page,
+        limit: LIMIT,
+      })
       .then((d) => alive && setData(d))
       .catch((e) => alive && setError(e.message))
       .finally(() => alive && setLoading(false));
     return () => {
       alive = false;
     };
-  }, [range, deviceId]);
+  }, [range, deviceId, page]);
 
   return (
     <Page>
@@ -74,8 +84,8 @@ function ActivityInner() {
 
             <Card
               title="Segments"
-              subtitle={`${data.total.toLocaleString()} total · showing latest ${data.segments.length}`}
-              bodyClass="!px-0"
+              subtitle={`${data.total.toLocaleString()} total`}
+              bodyClass="!px-0 !pb-0"
             >
               <DataState
                 loading={false}
@@ -143,6 +153,12 @@ function ActivityInner() {
                   </table>
                 </div>
               </DataState>
+              <Pager
+                page={page}
+                limit={LIMIT}
+                total={data.total}
+                onPage={setPage}
+              />
             </Card>
           </>
         )}

@@ -88,6 +88,17 @@ export const IconClock = ({ className, size }: P) => (
     <path d="M12 7v5l3 2" />
   </svg>
 );
+export const IconStorage = ({ className, size }: P) => (
+  <svg {...base(size)} className={className}>
+    <ellipse cx="12" cy="5" rx="8" ry="3" />
+    <path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6" />
+  </svg>
+);
+export const IconTrash = ({ className, size }: P) => (
+  <svg {...base(size)} className={className}>
+    <path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+  </svg>
+);
 export const IconMonitor = ({ className, size }: P) => (
   <svg {...base(size)} className={className}>
     <rect x="3" y="4" width="18" height="12" rx="2" />

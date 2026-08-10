@@ -72,7 +72,7 @@ export default function DevicesPage() {
                         <Monitor platform={d.platform} />
                         <div>
                           <Link
-                            href={`/activity?deviceId=${d.id}`}
+                            href={`/devices/${d.id}`}
                             className="text-ink font-medium hover:text-brand"
                           >
                             {d.name}

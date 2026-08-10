@@ -34,43 +34,66 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen grid place-items-center px-4">
-      <form
-        onSubmit={submit}
-        className="w-full max-w-sm bg-surface border border-border rounded-xl p-8 shadow-sm"
-      >
-        <div className="flex items-center gap-2 mb-1">
-          <div className="h-8 w-8 rounded-lg bg-brand" />
-          <h1 className="text-lg font-semibold text-ink">Activity Tracker</h1>
+      <div className="w-full max-w-[380px]">
+        <div className="flex flex-col items-center mb-6">
+          <div
+            className="h-14 w-14 rounded-2xl grid place-items-center text-white font-bold text-xl mb-3"
+            style={{
+              background:
+                "linear-gradient(135deg, var(--series-1), var(--series-7))",
+              boxShadow: "var(--shadow-lg)",
+            }}
+          >
+            A
+          </div>
+          <h1 className="text-lg font-semibold text-ink tracking-tight">
+            Activity Tracker
+          </h1>
+          <p className="text-sm text-muted mt-0.5">Sign in to the admin console</p>
         </div>
-        <p className="text-sm text-muted mb-6">Admin sign in</p>
 
-        <label className="block text-xs text-muted mb-1">Email</label>
-        <input
-          type="email"
-          autoComplete="username"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="w-full mb-4 px-3 py-2 rounded-lg bg-surface-2 border border-border text-ink text-sm outline-none focus:border-brand"
-        />
-        <label className="block text-xs text-muted mb-1">Password</label>
-        <input
-          type="password"
-          autoComplete="current-password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="w-full mb-5 px-3 py-2 rounded-lg bg-surface-2 border border-border text-ink text-sm outline-none focus:border-brand"
-        />
-
-        {error && <p className="text-sm text-crit mb-4">{error}</p>}
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full py-2.5 rounded-lg bg-brand text-white text-sm font-medium disabled:opacity-50"
+        <form
+          onSubmit={submit}
+          className="bg-surface border border-border rounded-2xl p-7"
+          style={{ boxShadow: "var(--shadow)" }}
         >
-          {loading ? "Signing in…" : "Sign in"}
-        </button>
-      </form>
+          <label className="block text-xs font-medium text-muted mb-1.5">
+            Email
+          </label>
+          <input
+            type="email"
+            autoComplete="username"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@company.com"
+            className="w-full mb-4 px-3.5 py-2.5 rounded-xl bg-surface-2 border border-border text-ink text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/20 transition-all placeholder:text-faint"
+          />
+          <label className="block text-xs font-medium text-muted mb-1.5">
+            Password
+          </label>
+          <input
+            type="password"
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="••••••••"
+            className="w-full mb-1 px-3.5 py-2.5 rounded-xl bg-surface-2 border border-border text-ink text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/20 transition-all placeholder:text-faint"
+          />
+
+          {error && <p className="text-sm text-crit mt-3 mb-1">{error}</p>}
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full mt-5 py-2.5 rounded-xl bg-brand text-white text-sm font-semibold disabled:opacity-50 hover:opacity-90 transition-opacity"
+          >
+            {loading ? "Signing in…" : "Sign in"}
+          </button>
+        </form>
+        <p className="text-center text-xs text-faint mt-5">
+          Admins only · access is role-restricted
+        </p>
+      </div>
     </div>
   );
 }

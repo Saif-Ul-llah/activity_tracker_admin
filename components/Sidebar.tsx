@@ -11,6 +11,7 @@ import {
   IconDevice,
   IconUsers,
   IconBell,
+  IconStorage,
   IconSun,
   IconMoon,
   IconLogout,
@@ -21,6 +22,7 @@ const NAV = [
   { href: "/activity", label: "Activity History", Icon: IconActivity },
   { href: "/screenshots", label: "Screenshots", Icon: IconScreenshot },
   { href: "/devices", label: "Devices", Icon: IconDevice },
+  { href: "/storage", label: "Storage", Icon: IconStorage },
   { href: "/users", label: "User Management", Icon: IconUsers },
   { href: "/events", label: "Events", Icon: IconBell },
 ];

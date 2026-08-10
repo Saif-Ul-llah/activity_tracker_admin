@@ -88,6 +88,22 @@ export const api = {
   activity: (r?: Range) => call<ActivityResp>(`/api/admin/activity${qs(r)}`),
   screenshots: (r?: Range) => call<ScreenshotResp>(`/api/admin/screenshots${qs(r)}`),
   events: (r?: Range) => call<EventsResp>(`/api/admin/events${qs(r)}`),
+  storage: () => call<Storage>(`/api/admin/storage`),
+  updateGlobalSettings: (b: { screenshotUploadEnabled?: boolean; r2LimitBytes?: number }) =>
+    call<{ screenshotUploadEnabled: boolean; r2LimitBytes: number }>(
+      `/api/admin/settings`,
+      { method: "PATCH", body: b }
+    ),
+  deleteScreenshots: (b: {
+    ids?: string[];
+    deviceId?: string;
+    before?: number;
+    all?: boolean;
+  }) =>
+    call<{ deleted: number; freedFromR2: number }>(
+      `/api/admin/screenshots/delete`,
+      { method: "POST", body: b }
+    ),
 };
 
 // ── Response shapes ──────────────────────────────────────────────────────────
@@ -176,6 +192,14 @@ export interface ScreenshotResp {
   total: number;
   page: number;
   limit: number;
+}
+export interface Storage {
+  usedBytes: number;
+  screenshotCount: number;
+  limitBytes: number;
+  usedPercent: number;
+  screenshotUploadEnabled: boolean;
+  byDay: { day: string; bytes: number; count: number }[];
 }
 export interface EventsResp {
   items: {

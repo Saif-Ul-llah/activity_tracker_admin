@@ -54,7 +54,10 @@ function bucketLabel(iso: string, unit: "hour" | "day"): string {
     : d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
-// ── Activity timeline (stacked area by state) ─────────────────────────────────
+// ── Activity timeline (stacked, by state) ─────────────────────────────────────
+// Uses stacked BARS for discrete/sparse buckets (daily view, or few points) and a
+// stacked AREA only for dense continuous data (many hourly points). An area chart
+// can't draw from a single point, so bars keep sparse data legible.
 export function ActivityTimeline({
   data,
   unit,
@@ -62,7 +65,6 @@ export function ActivityTimeline({
   data: { bucket: string; state: string; durationMs: number }[];
   unit: "hour" | "day";
 }) {
-  // Pivot to one row per bucket with a column per state.
   const byBucket = new Map<string, any>();
   for (const d of data) {
     const row = byBucket.get(d.bucket) || { bucket: d.bucket };
@@ -73,55 +75,82 @@ export function ActivityTimeline({
     (a, b) => +new Date(a.bucket) - +new Date(b.bucket)
   );
   const states = STATE_ORDER.filter((s) => data.some((d) => d.state === s));
+  const useArea = unit === "hour" && rows.length >= 6;
+
+  const axes = (
+    <>
+      <CartesianGrid vertical={false} />
+      <XAxis
+        dataKey="bucket"
+        tickFormatter={(v) => bucketLabel(v, unit)}
+        minTickGap={30}
+        axisLine={false}
+        tickLine={false}
+      />
+      <YAxis
+        tickFormatter={(v) => fmtDuration(v)}
+        axisLine={false}
+        tickLine={false}
+        width={56}
+      />
+      <Tooltip
+        cursor={{ fill: "var(--surface-2)" }}
+        content={({ active, payload, label }) =>
+          active && payload?.length ? (
+            <TipBox
+              label={bucketLabel(String(label), unit)}
+              rows={payload
+                .filter((p) => p.value)
+                .map((p) => ({
+                  name: String(p.name),
+                  value: fmtDuration(Number(p.value)),
+                  color: String(p.color),
+                }))}
+            />
+          ) : null
+        }
+      />
+      <Legend iconType="circle" iconSize={8} />
+    </>
+  );
 
   return (
     <ResponsiveContainer width="100%" height={280}>
-      <AreaChart data={rows} margin={{ top: 8, right: 8, bottom: 0, left: -12 }}>
-        <CartesianGrid vertical={false} />
-        <XAxis
-          dataKey="bucket"
-          tickFormatter={(v) => bucketLabel(v, unit)}
-          minTickGap={40}
-          axisLine={false}
-          tickLine={false}
-        />
-        <YAxis
-          tickFormatter={(v) => fmtDuration(v)}
-          axisLine={false}
-          tickLine={false}
-          width={56}
-        />
-        <Tooltip
-          content={({ active, payload, label }) =>
-            active && payload?.length ? (
-              <TipBox
-                label={bucketLabel(String(label), unit)}
-                rows={payload
-                  .filter((p) => p.value)
-                  .map((p) => ({
-                    name: String(p.name),
-                    value: fmtDuration(Number(p.value)),
-                    color: String(p.color),
-                  }))}
-              />
-            ) : null
-          }
-        />
-        <Legend iconType="circle" iconSize={8} />
-        {states.map((s) => (
-          <Area
-            key={s}
-            type="monotone"
-            dataKey={s}
-            name={s}
-            stackId="1"
-            stroke={STATE_COLORS[s]}
-            fill={STATE_COLORS[s]}
-            fillOpacity={0.55}
-            strokeWidth={2}
-          />
-        ))}
-      </AreaChart>
+      {useArea ? (
+        <AreaChart data={rows} margin={{ top: 8, right: 8, bottom: 0, left: -12 }}>
+          {axes}
+          {states.map((s) => (
+            <Area
+              key={s}
+              type="monotone"
+              dataKey={s}
+              name={s}
+              stackId="1"
+              stroke={STATE_COLORS[s]}
+              fill={STATE_COLORS[s]}
+              fillOpacity={0.5}
+              strokeWidth={2}
+            />
+          ))}
+        </AreaChart>
+      ) : (
+        <BarChart data={rows} margin={{ top: 8, right: 8, bottom: 0, left: -12 }}>
+          {axes}
+          {states.map((s, i) => (
+            <Bar
+              key={s}
+              dataKey={s}
+              name={s}
+              stackId="1"
+              fill={STATE_COLORS[s]}
+              maxBarSize={64}
+              radius={
+                i === states.length - 1 ? [4, 4, 0, 0] : [0, 0, 0, 0]
+              }
+            />
+          ))}
+        </BarChart>
+      )}
     </ResponsiveContainer>
   );
 }

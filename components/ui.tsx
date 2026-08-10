@@ -174,6 +174,61 @@ export function ActivityMeter({ percent }: { percent: number }) {
   );
 }
 
+export function Pager({
+  page,
+  limit,
+  total,
+  onPage,
+}: {
+  page: number;
+  limit: number;
+  total: number;
+  onPage: (p: number) => void;
+}) {
+  const pages = Math.max(1, Math.ceil(total / limit));
+  if (total <= limit) return null;
+  const from = (page - 1) * limit + 1;
+  const to = Math.min(total, page * limit);
+  return (
+    <div className="flex items-center justify-between px-5 py-3 border-t border-border">
+      <span className="text-xs text-muted tabular-nums">
+        {from.toLocaleString()}–{to.toLocaleString()} of {total.toLocaleString()}
+      </span>
+      <div className="flex items-center gap-1">
+        <PagerBtn disabled={page <= 1} onClick={() => onPage(page - 1)}>
+          ‹ Prev
+        </PagerBtn>
+        <span className="text-xs text-muted px-2 tabular-nums">
+          {page} / {pages}
+        </span>
+        <PagerBtn disabled={page >= pages} onClick={() => onPage(page + 1)}>
+          Next ›
+        </PagerBtn>
+      </div>
+    </div>
+  );
+}
+
+function PagerBtn({
+  children,
+  disabled,
+  onClick,
+}: {
+  children: React.ReactNode;
+  disabled?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      disabled={disabled}
+      onClick={onClick}
+      className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-muted hover:bg-surface-2 hover:text-ink disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
+    >
+      {children}
+    </button>
+  );
+}
+
 export function DataState({
   loading,
   error,
