@@ -6,6 +6,7 @@ import { Page, PageHeader } from "@/components/Controls";
 import { Card, Badge, DataState, Avatar } from "@/components/ui";
 import { IconPlus, IconTrash } from "@/components/icons";
 import { fmtDateTime } from "@/lib/format";
+import { currentUser } from "@/lib/auth";
 
 const ROLES = ["ADMIN", "SUB_ADMIN", "DISTRIBUTOR", "INSTALLER", "CUSTOMER"];
 
@@ -18,6 +19,27 @@ export default function UsersPage() {
   const [deleting, setDeleting] = useState<UserRow | null>(null);
   const [delBusy, setDelBusy] = useState(false);
   const [delErr, setDelErr] = useState("");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkConfirm, setBulkConfirm] = useState(false);
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [bulkMsg, setBulkMsg] = useState("");
+
+  const selfId = currentUser()?.id;
+  // Rows that may be selected/deleted (never your own account).
+  const selectableIds = users.filter((u) => u.id !== selfId).map((u) => u.id);
+  const allSelected =
+    selectableIds.length > 0 && selectableIds.every((id) => selected.has(id));
+
+  function toggle(id: string) {
+    setSelected((prev) => {
+      const n = new Set(prev);
+      n.has(id) ? n.delete(id) : n.add(id);
+      return n;
+    });
+  }
+  function toggleAll() {
+    setSelected(allSelected ? new Set() : new Set(selectableIds));
+  }
 
   async function confirmDelete() {
     if (!deleting) return;
@@ -32,6 +54,22 @@ export default function UsersPage() {
     } finally {
       setDelBusy(false);
     }
+  }
+
+  async function bulkDelete() {
+    setBulkBusy(true);
+    setBulkMsg("");
+    const ids = Array.from(selected);
+    const results = await Promise.allSettled(ids.map((id) => api.deleteUser(id)));
+    const ok = results.filter((r) => r.status === "fulfilled").length;
+    const failed = results.length - ok;
+    setBulkMsg(
+      `Deleted ${ok} user(s)${failed ? `, ${failed} failed` : ""}.`
+    );
+    setSelected(new Set());
+    setBulkConfirm(false);
+    setBulkBusy(false);
+    load();
   }
 
   function load() {
@@ -59,6 +97,31 @@ export default function UsersPage() {
         </button>
       </PageHeader>
 
+      {(selected.size > 0 || bulkMsg) && (
+        <div className="flex items-center justify-between bg-surface border border-border rounded-xl px-4 py-2.5 mb-4">
+          <span className="text-sm text-ink font-medium">
+            {selected.size > 0 ? `${selected.size} selected` : bulkMsg}
+          </span>
+          {selected.size > 0 && (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setSelected(new Set())}
+                className="text-xs text-muted hover:text-ink px-2 py-1"
+              >
+                Clear
+              </button>
+              <button
+                onClick={() => setBulkConfirm(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-crit hover:opacity-90"
+              >
+                <IconTrash size={14} />
+                Delete selected
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
       <Card bodyClass="!px-0 !pt-0">
         <DataState
           loading={loading}
@@ -70,6 +133,15 @@ export default function UsersPage() {
             <table className="dt">
               <thead>
                 <tr>
+                  <th style={{ width: 40 }}>
+                    <input
+                      type="checkbox"
+                      checked={allSelected}
+                      onChange={toggleAll}
+                      className="accent-brand cursor-pointer align-middle"
+                      title="Select all"
+                    />
+                  </th>
                   <th>Name</th>
                   <th style={{ width: 130 }}>Role</th>
                   <th className="num" style={{ width: 90 }}>
@@ -82,7 +154,19 @@ export default function UsersPage() {
               </thead>
               <tbody>
                 {users.map((u) => (
-                  <tr key={u.id}>
+                  <tr key={u.id} className={selected.has(u.id) ? "bg-surface-2" : ""}>
+                    <td>
+                      {u.id === selfId ? (
+                        <span className="text-[10px] text-faint">you</span>
+                      ) : (
+                        <input
+                          type="checkbox"
+                          checked={selected.has(u.id)}
+                          onChange={() => toggle(u.id)}
+                          className="accent-brand cursor-pointer align-middle"
+                        />
+                      )}
+                    </td>
                     <td>
                       <div className="flex items-center gap-3">
                         <Avatar name={u.fullName} id={u.id} />
@@ -162,6 +246,34 @@ export default function UsersPage() {
             load();
           }}
         />
+      )}
+      {bulkConfirm && (
+        <Modal
+          title={`Delete ${selected.size} user(s)?`}
+          onClose={() => !bulkBusy && setBulkConfirm(false)}
+        >
+          <p className="text-sm text-muted">
+            This permanently removes {selected.size} user(s) and all of their
+            devices, activity, and screenshots (including R2 objects). This cannot
+            be undone.
+          </p>
+          <div className="flex gap-2 mt-5">
+            <button
+              onClick={bulkDelete}
+              disabled={bulkBusy}
+              className="flex-1 py-2 rounded-lg bg-crit text-white text-sm font-semibold disabled:opacity-50"
+            >
+              {bulkBusy ? "Deleting…" : `Delete ${selected.size} permanently`}
+            </button>
+            <button
+              onClick={() => setBulkConfirm(false)}
+              disabled={bulkBusy}
+              className="px-4 py-2 rounded-lg border border-border text-sm text-muted"
+            >
+              Cancel
+            </button>
+          </div>
+        </Modal>
       )}
       {deleting && (
         <Modal
