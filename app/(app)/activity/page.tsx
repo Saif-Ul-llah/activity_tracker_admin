@@ -3,10 +3,9 @@
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { api, ActivityResp, DeviceRow, Segment } from "@/lib/api";
-import { Page, PageHeader, RangeKey, rangeFor } from "@/components/Controls";
-import { Card, Badge, DataState } from "@/components/ui";
+import { Page, PageHeader, RangeKey, rangeFor, Select } from "@/components/Controls";
+import { Card, DataState, StatePill, ActivityMeter } from "@/components/ui";
 import { TopAppsBar } from "@/components/charts";
-import { STATE_COLORS } from "@/lib/palette";
 import { fmtDuration, fmtDateTime } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
@@ -54,18 +53,14 @@ function ActivityInner() {
         range={range}
         onRange={setRange}
       >
-        <select
-          value={deviceId}
-          onChange={(e) => setDeviceId(e.target.value)}
-          className="px-3 py-1.5 rounded-lg bg-surface border border-border text-xs text-ink outline-none"
-        >
+        <Select value={deviceId} onChange={setDeviceId}>
           <option value="">All devices</option>
           {devices.map((d) => (
             <option key={d.id} value={d.id}>
               {d.name}
             </option>
           ))}
-        </select>
+        </Select>
       </PageHeader>
 
       <DataState loading={loading} error={error}>
@@ -80,6 +75,7 @@ function ActivityInner() {
             <Card
               title="Segments"
               subtitle={`${data.total.toLocaleString()} total · showing latest ${data.segments.length}`}
+              bodyClass="!px-0"
             >
               <DataState
                 loading={false}
@@ -87,62 +83,58 @@ function ActivityInner() {
                 emptyMsg="No activity segments in this range."
               >
                 <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
+                  <table className="dt">
                     <thead>
-                      <tr className="text-left text-xs text-faint border-b border-border">
-                        <th className="py-2 pr-4 font-medium">Started</th>
-                        <th className="py-2 pr-4 font-medium">State</th>
-                        <th className="py-2 pr-4 font-medium">App</th>
-                        <th className="py-2 pr-4 font-medium">Window / URL</th>
-                        <th className="py-2 pr-4 font-medium">Duration</th>
-                        <th className="py-2 pr-4 font-medium">Activity</th>
-                        <th className="py-2 font-medium">Input</th>
+                      <tr>
+                        <th style={{ width: 150 }}>Started</th>
+                        <th style={{ width: 110 }}>State</th>
+                        <th style={{ width: 160 }}>App</th>
+                        <th>Window / URL</th>
+                        <th className="num" style={{ width: 100 }}>
+                          Duration
+                        </th>
+                        <th className="num" style={{ width: 130 }}>
+                          Activity
+                        </th>
+                        <th className="num" style={{ width: 90 }}>
+                          Input
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
                       {data.segments.map((s: Segment) => (
-                        <tr
-                          key={s._id}
-                          className="border-b border-border/60 hover:bg-surface-2"
-                        >
-                          <td className="py-2 pr-4 text-muted text-xs whitespace-nowrap">
+                        <tr key={s._id}>
+                          <td className="whitespace-nowrap text-xs text-muted">
                             {fmtDateTime(s.startedAtUtc)}
                           </td>
-                          <td className="py-2 pr-4">
-                            <span className="inline-flex items-center gap-1.5">
-                              <span
-                                className="h-2 w-2 rounded-full"
-                                style={{
-                                  background:
-                                    STATE_COLORS[s.state] || "var(--text-muted)",
-                                }}
-                              />
-                              <span className="text-ink text-xs capitalize">
-                                {s.state}
-                              </span>
-                            </span>
+                          <td>
+                            <StatePill state={s.state} />
                           </td>
-                          <td className="py-2 pr-4 text-ink">
+                          <td className="strong">
                             {s.app?.name || (
-                              <span className="text-faint italic">unknown</span>
+                              <span className="text-faint font-normal">
+                                unknown
+                              </span>
                             )}
                           </td>
-                          <td className="py-2 pr-4 text-muted text-xs max-w-[240px] truncate">
-                            {s.window?.url || s.window?.title || "—"}
+                          <td className="max-w-0 truncate text-muted">
+                            {s.window?.url || s.window?.title || (
+                              <span className="text-faint">—</span>
+                            )}
                           </td>
-                          <td className="py-2 pr-4 text-ink tabular-nums text-xs">
+                          <td className="num strong">
                             {fmtDuration(s.durationMs)}
                           </td>
-                          <td className="py-2 pr-4">
+                          <td className="num">
                             {s.state === "active" ? (
-                              <ActivityBar percent={s.activityPercent} />
+                              <ActivityMeter percent={s.activityPercent} />
                             ) : (
-                              <span className="text-faint text-xs">—</span>
+                              <span className="text-faint">—</span>
                             )}
                           </td>
-                          <td className="py-2 text-muted text-xs tabular-nums">
+                          <td className="num text-xs text-muted">
                             {s.input
-                              ? `${s.input.keyCount}k ${s.input.mouseClickCount}c`
+                              ? `${s.input.keyCount}⌨ ${s.input.mouseClickCount}🖱`
                               : "—"}
                           </td>
                         </tr>
@@ -156,22 +148,5 @@ function ActivityInner() {
         )}
       </DataState>
     </Page>
-  );
-}
-
-function ActivityBar({ percent }: { percent: number }) {
-  return (
-    <div className="flex items-center gap-2">
-      <div className="w-16 h-1.5 rounded-full bg-surface-2 overflow-hidden">
-        <div
-          className="h-full rounded-full"
-          style={{
-            width: `${Math.min(100, percent)}%`,
-            background: "var(--series-3)",
-          }}
-        />
-      </div>
-      <span className="text-xs text-muted tabular-nums">{percent}%</span>
-    </div>
   );
 }

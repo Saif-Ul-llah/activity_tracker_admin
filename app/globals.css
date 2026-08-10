@@ -8,55 +8,65 @@
   fixed order. Text always wears text tokens, never a series color.
 */
 :root {
-  --bg: #f4f4f2;
-  --surface: #fcfcfb;
-  --surface-2: #eeeeec;
-  --border: #e2e2de;
-  --text-primary: #0b0b0b;
-  --text-secondary: #52514e;
-  --text-muted: #8a8984;
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --surface-2: #f1f2f4;
+  --surface-hover: #f7f8fa;
+  --border: #e6e8ec;
+  --border-strong: #d6d9df;
+  --text-primary: #101317;
+  --text-secondary: #5b616e;
+  --text-muted: #949aa6;
 
-  --series-1: #2a78d6; /* blue */
-  --series-2: #eb6834; /* orange */
-  --series-3: #1baf7a; /* aqua */
-  --series-4: #eda100; /* yellow */
-  --series-5: #e87ba4; /* magenta */
-  --series-6: #008300; /* green */
-  --series-7: #4a3aa7; /* violet */
-  --series-8: #e34948; /* red */
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --series-3: #1baf7a;
+  --series-4: #eda100;
+  --series-5: #e87ba4;
+  --series-6: #008300;
+  --series-7: #4a3aa7;
+  --series-8: #e34948;
 
   --status-good: #1baf7a;
   --status-warning: #eda100;
   --status-serious: #eb6834;
   --status-critical: #e34948;
 
-  --grid: #ececea;
+  --grid: #eef0f3;
+  --shadow: 0 1px 2px rgba(16, 19, 23, 0.04), 0 4px 16px rgba(16, 19, 23, 0.05);
+  --shadow-lg: 0 8px 40px rgba(16, 19, 23, 0.16);
+  --brand-soft: rgba(42, 120, 214, 0.1);
 }
 
 .dark {
-  --bg: #121211;
-  --surface: #1a1a19;
-  --surface-2: #232322;
-  --border: #302f2d;
-  --text-primary: #ffffff;
-  --text-secondary: #c3c2b7;
-  --text-muted: #8f8e86;
+  --bg: #0d0f11;
+  --surface: #16191d;
+  --surface-2: #1e2227;
+  --surface-hover: #1c2025;
+  --border: #262b31;
+  --border-strong: #333941;
+  --text-primary: #f3f5f7;
+  --text-secondary: #a4acb8;
+  --text-muted: #6f7883;
 
-  --series-1: #3987e5;
-  --series-2: #d95926;
-  --series-3: #199e70;
-  --series-4: #c98500;
-  --series-5: #d55181;
-  --series-6: #2fa32f;
+  --series-1: #4f97ea;
+  --series-2: #ef7a4a;
+  --series-3: #2bc08a;
+  --series-4: #e0a52a;
+  --series-5: #e389ac;
+  --series-6: #35b135;
   --series-7: #9085e9;
-  --series-8: #e66767;
+  --series-8: #ec6a69;
 
-  --status-good: #199e70;
-  --status-warning: #c98500;
-  --status-serious: #d95926;
-  --status-critical: #e66767;
+  --status-good: #2bc08a;
+  --status-warning: #e0a52a;
+  --status-serious: #ef7a4a;
+  --status-critical: #ec6a69;
 
-  --grid: #2a2a28;
+  --grid: #23282e;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 6px 20px rgba(0, 0, 0, 0.28);
+  --shadow-lg: 0 12px 48px rgba(0, 0, 0, 0.55);
+  --brand-soft: rgba(79, 151, 234, 0.14);
 }
 
 * {
@@ -70,12 +80,73 @@ body {
 body {
   background: var(--bg);
   color: var(--text-primary);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
-    Arial, sans-serif;
+  font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
 }
 
-/* Recharts: make axis/legend text use token colors, recede the grid. */
+::selection {
+  background: var(--brand-soft);
+}
+
+/* Custom scrollbar for a more finished feel. */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 6px;
+  border: 2px solid var(--bg);
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ── Data table primitives ─────────────────────────────────────────────────── */
+.dt {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 13px;
+}
+.dt thead th {
+  text-align: left;
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 0 16px 10px;
+  white-space: nowrap;
+}
+.dt tbody td {
+  padding: 11px 16px;
+  color: var(--text-secondary);
+  border-top: 1px solid var(--border);
+  vertical-align: middle;
+}
+.dt tbody tr:first-child td {
+  border-top: 1px solid var(--border);
+}
+.dt tbody tr {
+  transition: background 0.12s ease;
+}
+.dt tbody tr:hover td {
+  background: var(--surface-hover);
+}
+.dt td.num,
+.dt th.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.dt .strong {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+/* Recharts theming */
 .recharts-cartesian-axis-tick text {
   fill: var(--text-muted);
   font-size: 11px;
@@ -86,4 +157,8 @@ body {
 .recharts-legend-item-text {
   color: var(--text-secondary) !important;
   font-size: 12px;
+}
+.recharts-default-tooltip {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
 }

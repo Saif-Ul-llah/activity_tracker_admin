@@ -7,6 +7,18 @@ import { Page, PageHeader } from "@/components/Controls";
 import { Card, Badge, DataState } from "@/components/ui";
 import { fmtDuration, relativeTime } from "@/lib/format";
 
+function Monitor({ platform }: { platform: string }) {
+  const glyph = platform === "win32" ? "⊞" : platform === "darwin" ? "" : "";
+  return (
+    <span
+      className="inline-grid place-items-center h-9 w-9 rounded-xl shrink-0 text-[15px]"
+      style={{ background: "var(--surface-2)", color: "var(--text-secondary)" }}
+    >
+      {glyph}
+    </span>
+  );
+}
+
 export default function DevicesPage() {
   const [devices, setDevices] = useState<DeviceRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -30,7 +42,7 @@ export default function DevicesPage() {
   return (
     <Page>
       <PageHeader title="Devices" subtitle="Registered agents across the fleet" />
-      <Card>
+      <Card bodyClass="!px-0 !pt-0">
         <DataState
           loading={loading}
           error={error}
@@ -38,62 +50,70 @@ export default function DevicesPage() {
           emptyMsg="No devices registered yet."
         >
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="dt">
               <thead>
-                <tr className="text-left text-xs text-faint border-b border-border">
-                  <th className="py-2 pr-4 font-medium">Device</th>
-                  <th className="py-2 pr-4 font-medium">Platform</th>
-                  <th className="py-2 pr-4 font-medium">Session</th>
-                  <th className="py-2 pr-4 font-medium">Active today</th>
-                  <th className="py-2 pr-4 font-medium">Last seen</th>
-                  <th className="py-2 pr-4 font-medium">Status</th>
-                  <th className="py-2 font-medium"></th>
+                <tr>
+                  <th>Device</th>
+                  <th style={{ width: 170 }}>Platform</th>
+                  <th style={{ width: 170 }}>Session</th>
+                  <th className="num" style={{ width: 120 }}>
+                    Active today
+                  </th>
+                  <th style={{ width: 120 }}>Last seen</th>
+                  <th style={{ width: 110 }}>Status</th>
+                  <th style={{ width: 90 }}></th>
                 </tr>
               </thead>
               <tbody>
                 {devices.map((d) => (
-                  <tr
-                    key={d.id}
-                    className="border-b border-border/60 hover:bg-surface-2"
-                  >
-                    <td className="py-2.5 pr-4">
-                      <Link
-                        href={`/activity?deviceId=${d.id}`}
-                        className="text-ink font-medium hover:text-brand"
-                      >
-                        {d.name}
-                      </Link>
-                      <div className="text-[11px] text-faint">
-                        v{d.agentVersion || "?"}
+                  <tr key={d.id}>
+                    <td>
+                      <div className="flex items-center gap-3">
+                        <Monitor platform={d.platform} />
+                        <div>
+                          <Link
+                            href={`/activity?deviceId=${d.id}`}
+                            className="text-ink font-medium hover:text-brand"
+                          >
+                            {d.name}
+                          </Link>
+                          <div className="text-[11px] text-faint">
+                            agent v{d.agentVersion || "?"}
+                          </div>
+                        </div>
                       </div>
                     </td>
-                    <td className="py-2.5 pr-4 text-muted">
+                    <td className="capitalize">
                       {d.platform} {d.osVersion}
                     </td>
-                    <td className="py-2.5 pr-4">
+                    <td>
                       {d.degraded?.length ? (
-                        <Badge tone="warn">{d.sessionType} · degraded</Badge>
+                        <Badge tone="warn" dot>
+                          {d.sessionType} · degraded
+                        </Badge>
                       ) : (
-                        <Badge>{d.sessionType}</Badge>
+                        <Badge dot>{d.sessionType}</Badge>
                       )}
                     </td>
-                    <td className="py-2.5 pr-4 text-ink tabular-nums">
-                      {fmtDuration(d.activeMsToday)}
-                    </td>
-                    <td className="py-2.5 pr-4 text-muted text-xs">
+                    <td className="num strong">{fmtDuration(d.activeMsToday)}</td>
+                    <td className="text-xs text-muted">
                       {relativeTime(d.lastSeenAt)}
                     </td>
-                    <td className="py-2.5 pr-4">
+                    <td>
                       {d.revoked ? (
-                        <Badge tone="crit">Revoked</Badge>
+                        <Badge tone="crit" dot>
+                          Revoked
+                        </Badge>
                       ) : (
-                        <Badge tone="good">Active</Badge>
+                        <Badge tone="good" dot>
+                          Active
+                        </Badge>
                       )}
                     </td>
-                    <td className="py-2.5 text-right">
+                    <td className="num">
                       <button
                         onClick={() => toggleRevoke(d)}
-                        className="text-xs text-brand hover:underline"
+                        className="text-xs font-medium text-brand hover:underline"
                       >
                         {d.revoked ? "Restore" : "Revoke"}
                       </button>

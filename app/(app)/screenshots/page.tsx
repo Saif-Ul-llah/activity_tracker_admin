@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { api, DeviceRow, Shot } from "@/lib/api";
-import { Page, PageHeader, RangeKey, rangeFor } from "@/components/Controls";
+import { Page, PageHeader, RangeKey, rangeFor, Select } from "@/components/Controls";
 import { Card, Badge, DataState } from "@/components/ui";
 import { fmtDateTime, fmtBytes } from "@/lib/format";
 
@@ -58,18 +58,14 @@ function ScreenshotsInner() {
         range={range}
         onRange={setRange}
       >
-        <select
-          value={deviceId}
-          onChange={(e) => setDeviceId(e.target.value)}
-          className="px-3 py-1.5 rounded-lg bg-surface border border-border text-xs text-ink outline-none"
-        >
+        <Select value={deviceId} onChange={setDeviceId}>
           <option value="">All devices</option>
           {devices.map((d) => (
             <option key={d.id} value={d.id}>
               {d.name}
             </option>
           ))}
-        </select>
+        </Select>
       </PageHeader>
 
       <DataState

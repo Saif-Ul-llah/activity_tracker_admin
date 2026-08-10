@@ -32,20 +32,25 @@ export function PageHeader({
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
       <div>
-        <h1 className="text-xl font-semibold text-ink">{title}</h1>
-        {subtitle && <p className="text-sm text-muted mt-0.5">{subtitle}</p>}
+        <h1 className="text-[22px] font-semibold text-ink tracking-tight">
+          {title}
+        </h1>
+        {subtitle && <p className="text-sm text-muted mt-1">{subtitle}</p>}
       </div>
       <div className="flex items-center gap-2">
         {children}
         {range && onRange && (
-          <div className="inline-flex rounded-lg border border-border bg-surface p-0.5">
+          <div
+            className="inline-flex rounded-xl border border-border bg-surface p-1"
+            style={{ boxShadow: "var(--shadow)" }}
+          >
             {(["today", "7d", "30d"] as RangeKey[]).map((k) => (
               <button
                 key={k}
                 onClick={() => onRange(k)}
-                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                   range === k
-                    ? "bg-brand text-white"
+                    ? "bg-brand text-white shadow-sm"
                     : "text-muted hover:text-ink"
                 }`}
               >
@@ -59,6 +64,28 @@ export function PageHeader({
   );
 }
 
+// Styled select to match the range tabs.
+export function Select({
+  value,
+  onChange,
+  children,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  children: ReactNode;
+}) {
+  return (
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="px-3 py-2 rounded-xl bg-surface border border-border text-xs font-medium text-ink outline-none cursor-pointer hover:border-border-strong transition-colors"
+      style={{ boxShadow: "var(--shadow)" }}
+    >
+      {children}
+    </select>
+  );
+}
+
 export function Page({ children }: { children: ReactNode }) {
-  return <div className="p-6 max-w-[1400px] mx-auto">{children}</div>;
+  return <div className="px-7 py-7 max-w-[1360px] mx-auto">{children}</div>;
 }

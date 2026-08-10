@@ -41,7 +41,7 @@ export default function EventsPage() {
         range={range}
         onRange={setRange}
       />
-      <Card>
+      <Card bodyClass="!px-0 !pt-0">
         <DataState
           loading={loading}
           error={error}
@@ -49,31 +49,30 @@ export default function EventsPage() {
           emptyMsg="No events reported in this range."
         >
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="dt">
               <thead>
-                <tr className="text-left text-xs text-faint border-b border-border">
-                  <th className="py-2 pr-4 font-medium">Time</th>
-                  <th className="py-2 pr-4 font-medium">Type</th>
-                  <th className="py-2 pr-4 font-medium">Device</th>
-                  <th className="py-2 font-medium">Detail</th>
+                <tr>
+                  <th style={{ width: 160 }}>Time</th>
+                  <th style={{ width: 160 }}>Type</th>
+                  <th style={{ width: 130 }}>Device</th>
+                  <th>Detail</th>
                 </tr>
               </thead>
               <tbody>
                 {data?.items.map((e) => (
-                  <tr
-                    key={e._id}
-                    className="border-b border-border/60 hover:bg-surface-2"
-                  >
-                    <td className="py-2 pr-4 text-muted text-xs whitespace-nowrap">
+                  <tr key={e._id}>
+                    <td className="text-xs text-muted whitespace-nowrap">
                       {fmtDateTime(e.atUtc)}
                     </td>
-                    <td className="py-2 pr-4">
-                      <Badge tone={TONE[e.type] || "neutral"}>{e.type}</Badge>
+                    <td>
+                      <Badge tone={TONE[e.type] || "neutral"} dot>
+                        {e.type}
+                      </Badge>
                     </td>
-                    <td className="py-2 pr-4 text-muted text-xs font-mono">
+                    <td className="text-xs text-muted font-mono">
                       {e.deviceId.slice(-8)}
                     </td>
-                    <td className="py-2 text-muted text-xs font-mono max-w-[360px] truncate">
+                    <td className="max-w-0 truncate text-xs text-muted font-mono">
                       {e.data ? JSON.stringify(e.data) : "—"}
                     </td>
                   </tr>

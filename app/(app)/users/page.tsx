@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { api, UserRow } from "@/lib/api";
 import { Page, PageHeader } from "@/components/Controls";
-import { Card, Badge, DataState } from "@/components/ui";
+import { Card, Badge, DataState, Avatar } from "@/components/ui";
+import { IconPlus } from "@/components/icons";
 import { fmtDateTime } from "@/lib/format";
 
 const ROLES = ["ADMIN", "SUB_ADMIN", "DISTRIBUTOR", "INSTALLER", "CUSTOMER"];
@@ -33,13 +34,14 @@ export default function UsersPage() {
       >
         <button
           onClick={() => setCreating(true)}
-          className="px-3 py-1.5 rounded-lg bg-brand text-white text-xs font-medium"
+          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-brand text-white text-xs font-semibold hover:opacity-90 transition-opacity"
         >
-          + New user
+          <IconPlus size={15} />
+          New user
         </button>
       </PageHeader>
 
-      <Card>
+      <Card bodyClass="!px-0 !pt-0">
         <DataState
           loading={loading}
           error={error}
@@ -47,50 +49,59 @@ export default function UsersPage() {
           emptyMsg="No users yet."
         >
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="dt">
               <thead>
-                <tr className="text-left text-xs text-faint border-b border-border">
-                  <th className="py-2 pr-4 font-medium">Name</th>
-                  <th className="py-2 pr-4 font-medium">Email</th>
-                  <th className="py-2 pr-4 font-medium">Role</th>
-                  <th className="py-2 pr-4 font-medium">Devices</th>
-                  <th className="py-2 pr-4 font-medium">Status</th>
-                  <th className="py-2 pr-4 font-medium">Joined</th>
-                  <th className="py-2 font-medium"></th>
+                <tr>
+                  <th>Name</th>
+                  <th style={{ width: 130 }}>Role</th>
+                  <th className="num" style={{ width: 90 }}>
+                    Devices
+                  </th>
+                  <th style={{ width: 110 }}>Status</th>
+                  <th style={{ width: 140 }}>Joined</th>
+                  <th className="num" style={{ width: 70 }}></th>
                 </tr>
               </thead>
               <tbody>
                 {users.map((u) => (
-                  <tr
-                    key={u.id}
-                    className="border-b border-border/60 hover:bg-surface-2"
-                  >
-                    <td className="py-2.5 pr-4 text-ink font-medium">
-                      {u.fullName}
+                  <tr key={u.id}>
+                    <td>
+                      <div className="flex items-center gap-3">
+                        <Avatar name={u.fullName} id={u.id} />
+                        <div className="min-w-0">
+                          <div className="text-ink font-medium truncate">
+                            {u.fullName}
+                          </div>
+                          <div className="text-xs text-faint truncate">
+                            {u.email}
+                          </div>
+                        </div>
+                      </div>
                     </td>
-                    <td className="py-2.5 pr-4 text-muted">{u.email}</td>
-                    <td className="py-2.5 pr-4">
+                    <td>
                       <Badge tone={u.role === "ADMIN" ? "brand" : "neutral"}>
                         {u.role}
                       </Badge>
                     </td>
-                    <td className="py-2.5 pr-4 text-muted tabular-nums">
-                      {u.deviceCount}
-                    </td>
-                    <td className="py-2.5 pr-4">
+                    <td className="num strong">{u.deviceCount}</td>
+                    <td>
                       {u.isActive ? (
-                        <Badge tone="good">Active</Badge>
+                        <Badge tone="good" dot>
+                          Active
+                        </Badge>
                       ) : (
-                        <Badge tone="crit">Disabled</Badge>
+                        <Badge tone="crit" dot>
+                          Disabled
+                        </Badge>
                       )}
                     </td>
-                    <td className="py-2.5 pr-4 text-faint text-xs">
+                    <td className="text-xs text-faint">
                       {fmtDateTime(u.createdAt)}
                     </td>
-                    <td className="py-2.5 text-right">
+                    <td className="num">
                       <button
                         onClick={() => setEditing(u)}
-                        className="text-xs text-brand hover:underline"
+                        className="text-xs font-medium text-brand hover:underline"
                       >
                         Edit
                       </button>

@@ -10,6 +10,12 @@ import {
   StateDonut,
   Heatmap,
 } from "@/components/charts";
+import {
+  IconClock,
+  IconMoon,
+  IconMonitor,
+  IconScreenshot,
+} from "@/components/icons";
 import { fmtDuration } from "@/lib/format";
 
 export default function OverviewPage() {
@@ -53,23 +59,27 @@ export default function OverviewPage() {
                 value={fmtDuration(k.activeMs)}
                 sub={`${k.avgActivityPercent}% avg activity`}
                 accent="var(--series-3)"
+                icon={<IconClock size={18} />}
               />
               <Kpi
                 label="Idle time"
                 value={fmtDuration(k.idleMs)}
                 accent="var(--series-4)"
+                icon={<IconMoon size={18} />}
               />
               <Kpi
                 label="Active devices"
                 value={String(k.activeDevices)}
                 sub={`of ${k.deviceCount} total`}
                 accent="var(--series-1)"
+                icon={<IconMonitor size={18} />}
               />
               <Kpi
                 label="Screenshots"
                 value={k.screenshotCount.toLocaleString()}
                 sub={`${k.segmentCount.toLocaleString()} segments`}
                 accent="var(--series-5)"
+                icon={<IconScreenshot size={18} />}
               />
             </div>
 
