@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { api, UserRow } from "@/lib/api";
 import { Page, PageHeader } from "@/components/Controls";
 import { Card, Badge, DataState, Avatar } from "@/components/ui";
-import { IconPlus } from "@/components/icons";
+import { IconPlus, IconTrash } from "@/components/icons";
 import { fmtDateTime } from "@/lib/format";
 
 const ROLES = ["ADMIN", "SUB_ADMIN", "DISTRIBUTOR", "INSTALLER", "CUSTOMER"];
@@ -15,6 +15,24 @@ export default function UsersPage() {
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<UserRow | null>(null);
   const [creating, setCreating] = useState(false);
+  const [deleting, setDeleting] = useState<UserRow | null>(null);
+  const [delBusy, setDelBusy] = useState(false);
+  const [delErr, setDelErr] = useState("");
+
+  async function confirmDelete() {
+    if (!deleting) return;
+    setDelBusy(true);
+    setDelErr("");
+    try {
+      await api.deleteUser(deleting.id);
+      setDeleting(null);
+      load();
+    } catch (e: any) {
+      setDelErr(e.message);
+    } finally {
+      setDelBusy(false);
+    }
+  }
 
   function load() {
     setLoading(true);
@@ -59,7 +77,7 @@ export default function UsersPage() {
                   </th>
                   <th style={{ width: 110 }}>Status</th>
                   <th style={{ width: 140 }}>Joined</th>
-                  <th className="num" style={{ width: 70 }}></th>
+                  <th className="num" style={{ width: 90 }}></th>
                 </tr>
               </thead>
               <tbody>
@@ -99,12 +117,24 @@ export default function UsersPage() {
                       {fmtDateTime(u.createdAt)}
                     </td>
                     <td className="num">
-                      <button
-                        onClick={() => setEditing(u)}
-                        className="text-xs font-medium text-brand hover:underline"
-                      >
-                        Edit
-                      </button>
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          onClick={() => setEditing(u)}
+                          className="text-xs font-medium text-brand hover:underline px-1.5"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => {
+                            setDelErr("");
+                            setDeleting(u);
+                          }}
+                          title="Delete user"
+                          className="p-1.5 rounded-lg text-faint hover:text-crit hover:bg-crit/10 transition-colors"
+                        >
+                          <IconTrash size={15} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -132,6 +162,35 @@ export default function UsersPage() {
             load();
           }}
         />
+      )}
+      {deleting && (
+        <Modal
+          title={`Delete ${deleting.email}?`}
+          onClose={() => !delBusy && setDeleting(null)}
+        >
+          <p className="text-sm text-muted">
+            This permanently removes <strong>{deleting.fullName}</strong>, their{" "}
+            {deleting.deviceCount} device(s), and all of their activity and
+            screenshots (including R2 objects). This cannot be undone.
+          </p>
+          {delErr && <p className="text-xs text-crit mt-3">{delErr}</p>}
+          <div className="flex gap-2 mt-5">
+            <button
+              onClick={confirmDelete}
+              disabled={delBusy}
+              className="flex-1 py-2 rounded-lg bg-crit text-white text-sm font-semibold disabled:opacity-50"
+            >
+              {delBusy ? "Deleting…" : "Delete permanently"}
+            </button>
+            <button
+              onClick={() => setDeleting(null)}
+              disabled={delBusy}
+              className="px-4 py-2 rounded-lg border border-border text-sm text-muted"
+            >
+              Cancel
+            </button>
+          </div>
+        </Modal>
       )}
     </Page>
   );
