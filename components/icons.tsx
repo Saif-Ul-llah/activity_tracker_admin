@@ -99,6 +99,19 @@ export const IconTrash = ({ className, size }: P) => (
     <path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
   </svg>
 );
+export const IconList = ({ className, size }: P) => (
+  <svg {...base(size)} className={className}>
+    <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
+  </svg>
+);
+export const IconGrid = ({ className, size }: P) => (
+  <svg {...base(size)} className={className}>
+    <rect x="3" y="3" width="7" height="7" rx="1.5" />
+    <rect x="14" y="3" width="7" height="7" rx="1.5" />
+    <rect x="3" y="14" width="7" height="7" rx="1.5" />
+    <rect x="14" y="14" width="7" height="7" rx="1.5" />
+  </svg>
+);
 export const IconMonitor = ({ className, size }: P) => (
   <svg {...base(size)} className={className}>
     <rect x="3" y="4" width="18" height="12" rx="2" />

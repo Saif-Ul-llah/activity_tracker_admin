@@ -5,6 +5,7 @@ import Link from "next/link";
 import { api, DeviceRow } from "@/lib/api";
 import { Page, PageHeader } from "@/components/Controls";
 import { Card, Badge, DataState } from "@/components/ui";
+import { ViewToggle, useViewMode } from "@/components/ViewToggle";
 import { fmtDuration, relativeTime } from "@/lib/format";
 
 function Monitor({ platform }: { platform: string }) {
@@ -23,6 +24,7 @@ export default function DevicesPage() {
   const [devices, setDevices] = useState<DeviceRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [view, setView] = useViewMode("devices", "table");
 
   function load() {
     setLoading(true);
@@ -41,7 +43,89 @@ export default function DevicesPage() {
 
   return (
     <Page>
-      <PageHeader title="Devices" subtitle="Registered agents across the fleet" />
+      <PageHeader title="Devices" subtitle="Registered agents across the fleet">
+        <ViewToggle mode={view} onChange={setView} />
+      </PageHeader>
+
+      {view === "cards" ? (
+        <DataState
+          loading={loading}
+          error={error}
+          empty={devices.length === 0}
+          emptyMsg="No devices registered yet."
+        >
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+            {devices.map((d) => (
+              <div
+                key={d.id}
+                className="bg-surface border border-border rounded-2xl p-4"
+                style={{ boxShadow: "var(--shadow)" }}
+              >
+                <div className="flex items-center gap-3 mb-3">
+                  <Monitor platform={d.platform} />
+                  <div className="min-w-0">
+                    <Link
+                      href={`/devices/${d.id}`}
+                      className="text-ink font-semibold hover:text-brand truncate block"
+                    >
+                      {d.name}
+                    </Link>
+                    <div className="text-[11px] text-faint capitalize">
+                      {d.platform} · agent v{d.agentVersion || "?"}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex flex-wrap items-center gap-2 mb-4">
+                  {d.degraded?.length ? (
+                    <Badge tone="warn" dot>
+                      {d.sessionType} · degraded
+                    </Badge>
+                  ) : (
+                    <Badge dot>{d.sessionType}</Badge>
+                  )}
+                  {d.revoked ? (
+                    <Badge tone="crit" dot>
+                      Revoked
+                    </Badge>
+                  ) : (
+                    <Badge tone="good" dot>
+                      Active
+                    </Badge>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  <div>
+                    <div className="text-[11px] text-faint">Active today</div>
+                    <div className="text-ink font-semibold tabular-nums">
+                      {fmtDuration(d.activeMsToday)}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-[11px] text-faint">Last seen</div>
+                    <div className="text-ink text-sm">
+                      {relativeTime(d.lastSeenAt)}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between pt-3 border-t border-border">
+                  <Link
+                    href={`/devices/${d.id}`}
+                    className="text-xs font-medium text-brand hover:underline"
+                  >
+                    View activity
+                  </Link>
+                  <button
+                    onClick={() => toggleRevoke(d)}
+                    className="text-xs font-medium text-muted hover:text-ink"
+                  >
+                    {d.revoked ? "Restore" : "Revoke"}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </DataState>
+      ) : (
       <Card bodyClass="!px-0 !pt-0">
         <DataState
           loading={loading}
@@ -125,6 +209,7 @@ export default function DevicesPage() {
           </div>
         </DataState>
       </Card>
+      )}
     </Page>
   );
 }

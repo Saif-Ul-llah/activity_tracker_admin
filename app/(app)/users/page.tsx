@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react";
 import { api, UserRow } from "@/lib/api";
 import { Page, PageHeader } from "@/components/Controls";
-import { Card, Badge, DataState, Avatar } from "@/components/ui";
-import { IconPlus, IconTrash } from "@/components/icons";
+import { Card, Badge, DataState, Avatar, Kpi } from "@/components/ui";
+import { IconPlus, IconTrash, IconSearch, IconUsers } from "@/components/icons";
+import { ViewToggle, useViewMode } from "@/components/ViewToggle";
 import { fmtDateTime } from "@/lib/format";
 import { currentUser } from "@/lib/auth";
 
@@ -24,9 +25,32 @@ export default function UsersPage() {
   const [bulkBusy, setBulkBusy] = useState(false);
   const [bulkMsg, setBulkMsg] = useState("");
 
+  const [search, setSearch] = useState("");
+  const [roleFilter, setRoleFilter] = useState("");
+  const [view, setView] = useViewMode("users", "table");
+
   const selfId = currentUser()?.id;
+
+  // Client-side search + role filter (the user list is small).
+  const filtered = users.filter((u) => {
+    if (roleFilter && u.role !== roleFilter) return false;
+    if (!search) return true;
+    const q = search.toLowerCase();
+    return (
+      u.fullName.toLowerCase().includes(q) || u.email.toLowerCase().includes(q)
+    );
+  });
+
+  const stats = {
+    total: users.length,
+    admins: users.filter((u) => u.role === "ADMIN" || u.role === "SUB_ADMIN")
+      .length,
+    active: users.filter((u) => u.isActive).length,
+    devices: users.reduce((a, u) => a + u.deviceCount, 0),
+  };
+
   // Rows that may be selected/deleted (never your own account).
-  const selectableIds = users.filter((u) => u.id !== selfId).map((u) => u.id);
+  const selectableIds = filtered.filter((u) => u.id !== selfId).map((u) => u.id);
   const allSelected =
     selectableIds.length > 0 && selectableIds.every((id) => selected.has(id));
 
@@ -88,6 +112,7 @@ export default function UsersPage() {
         title="User Management"
         subtitle="Employees, roles, and access"
       >
+        <ViewToggle mode={view} onChange={setView} />
         <button
           onClick={() => setCreating(true)}
           className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-brand text-white text-xs font-semibold hover:opacity-90 transition-opacity"
@@ -96,6 +121,51 @@ export default function UsersPage() {
           New user
         </button>
       </PageHeader>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+        <Kpi
+          label="Total users"
+          value={String(stats.total)}
+          accent="var(--series-1)"
+          icon={<IconUsers size={18} />}
+        />
+        <Kpi label="Admins" value={String(stats.admins)} accent="var(--series-7)" />
+        <Kpi label="Active" value={String(stats.active)} accent="var(--series-3)" />
+        <Kpi
+          label="Devices"
+          value={String(stats.devices)}
+          accent="var(--series-5)"
+        />
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2 mb-4">
+        <div className="relative flex-1 min-w-[220px] max-w-sm">
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-faint">
+            <IconSearch size={16} />
+          </span>
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search by name or email…"
+            className="w-full pl-9 pr-3 py-2 rounded-xl bg-surface border border-border text-sm text-ink outline-none focus:border-brand transition-colors"
+          />
+        </div>
+        <select
+          value={roleFilter}
+          onChange={(e) => setRoleFilter(e.target.value)}
+          className="px-3 py-2 rounded-xl bg-surface border border-border text-sm text-ink outline-none cursor-pointer"
+        >
+          <option value="">All roles</option>
+          {ROLES.map((r) => (
+            <option key={r} value={r}>
+              {r}
+            </option>
+          ))}
+        </select>
+        <span className="text-xs text-faint ml-auto">
+          {filtered.length} of {users.length}
+        </span>
+      </div>
 
       {(selected.size > 0 || bulkMsg) && (
         <div className="flex items-center justify-between bg-surface border border-border rounded-xl px-4 py-2.5 mb-4">
@@ -122,12 +192,99 @@ export default function UsersPage() {
         </div>
       )}
 
+      {view === "cards" ? (
+        <DataState
+          loading={loading}
+          error={error}
+          empty={filtered.length === 0}
+          emptyMsg={
+            users.length === 0 ? "No users yet." : "No users match your filters."
+          }
+        >
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+            {filtered.map((u) => (
+              <div
+                key={u.id}
+                className={`bg-surface border rounded-2xl p-4 relative transition-colors ${
+                  selected.has(u.id) ? "border-brand ring-1 ring-brand/30" : "border-border"
+                }`}
+                style={{ boxShadow: "var(--shadow)" }}
+              >
+                {u.id !== selfId && (
+                  <input
+                    type="checkbox"
+                    checked={selected.has(u.id)}
+                    onChange={() => toggle(u.id)}
+                    className="absolute top-3 right-3 accent-brand cursor-pointer"
+                  />
+                )}
+                <div className="flex items-center gap-3 mb-3">
+                  <Avatar name={u.fullName} id={u.id} />
+                  <div className="min-w-0">
+                    <div className="text-ink font-semibold truncate flex items-center gap-1.5">
+                      {u.fullName}
+                      {u.id === selfId && (
+                        <span className="text-[10px] text-faint font-normal">
+                          (you)
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-xs text-faint truncate">{u.email}</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 mb-4">
+                  <Badge tone={u.role === "ADMIN" ? "brand" : "neutral"}>
+                    {u.role}
+                  </Badge>
+                  {u.isActive ? (
+                    <Badge tone="good" dot>
+                      Active
+                    </Badge>
+                  ) : (
+                    <Badge tone="crit" dot>
+                      Disabled
+                    </Badge>
+                  )}
+                  <span className="text-xs text-muted ml-auto">
+                    {u.deviceCount} device{u.deviceCount === 1 ? "" : "s"}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between pt-3 border-t border-border">
+                  <span className="text-[11px] text-faint">
+                    Joined {fmtDateTime(u.createdAt)}
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setEditing(u)}
+                      className="text-xs font-medium text-brand hover:underline px-1.5"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => {
+                        setDelErr("");
+                        setDeleting(u);
+                      }}
+                      title="Delete user"
+                      className="p-1.5 rounded-lg text-faint hover:text-crit hover:bg-crit/10 transition-colors"
+                    >
+                      <IconTrash size={15} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </DataState>
+      ) : (
       <Card bodyClass="!px-0 !pt-0">
         <DataState
           loading={loading}
           error={error}
-          empty={users.length === 0}
-          emptyMsg="No users yet."
+          empty={filtered.length === 0}
+          emptyMsg={
+            users.length === 0 ? "No users yet." : "No users match your filters."
+          }
         >
           <div className="overflow-x-auto">
             <table className="dt">
@@ -153,7 +310,7 @@ export default function UsersPage() {
                 </tr>
               </thead>
               <tbody>
-                {users.map((u) => (
+                {filtered.map((u) => (
                   <tr key={u.id} className={selected.has(u.id) ? "bg-surface-2" : ""}>
                     <td>
                       {u.id === selfId ? (
@@ -227,6 +384,7 @@ export default function UsersPage() {
           </div>
         </DataState>
       </Card>
+      )}
 
       {creating && (
         <CreateUserModal

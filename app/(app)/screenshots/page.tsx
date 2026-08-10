@@ -6,6 +6,7 @@ import { api, DeviceRow, Shot } from "@/lib/api";
 import { Page, PageHeader, RangeKey, rangeFor, Select } from "@/components/Controls";
 import { Badge, DataState, Pager } from "@/components/ui";
 import { IconTrash } from "@/components/icons";
+import { ViewToggle, useViewMode } from "@/components/ViewToggle";
 import { fmtDateTime, fmtBytes } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
@@ -31,6 +32,7 @@ function ScreenshotsInner() {
   const [lightbox, setLightbox] = useState<Shot | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
+  const [view, setView] = useViewMode("screenshots", "cards");
   const LIMIT = 48;
 
   useEffect(() => {
@@ -104,6 +106,11 @@ function ScreenshotsInner() {
             </option>
           ))}
         </Select>
+        <ViewToggle
+          mode={view}
+          onChange={setView}
+          labels={{ table: "List", cards: "Grid" }}
+        />
       </PageHeader>
 
       {selected.size > 0 && (
@@ -136,6 +143,49 @@ function ScreenshotsInner() {
         empty={shots.length === 0}
         emptyMsg="No screenshots captured yet. (On Wayland, screenshots are blocked — use an Xorg session.)"
       >
+        {view === "table" ? (
+          <div className="bg-surface border border-border rounded-2xl overflow-hidden" style={{ boxShadow: "var(--shadow)" }}>
+            {shots.map((s) => {
+              const isSel = selected.has(s.id);
+              return (
+                <div
+                  key={s.id}
+                  className={`flex items-center gap-3 px-3 py-2 border-b border-border last:border-0 ${
+                    isSel ? "bg-surface-2" : "hover:bg-surface-hover"
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={isSel}
+                    onChange={() => toggle(s.id)}
+                    className="accent-brand cursor-pointer"
+                  />
+                  <button
+                    onClick={() => setLightbox(s)}
+                    className="h-11 w-20 rounded-md overflow-hidden bg-surface-2 shrink-0"
+                  >
+                    {s.url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={s.url} alt="" className="w-full h-full object-cover" loading="lazy" />
+                    ) : null}
+                  </button>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm text-ink truncate">
+                      {fmtDateTime(s.capturedAtUtc)}
+                    </div>
+                    <div className="text-[11px] text-faint">
+                      Display {s.displayIndex}
+                      {s.isActiveDisplay ? " · active" : ""}
+                    </div>
+                  </div>
+                  <span className="text-xs text-muted tabular-nums">
+                    {fmtBytes(s.bytes)}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
           {shots.map((s) => {
             const isSel = selected.has(s.id);
@@ -191,6 +241,7 @@ function ScreenshotsInner() {
             );
           })}
         </div>
+        )}
 
         {total > LIMIT && (
           <div className="mt-4 bg-surface border border-border rounded-xl">

@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { api, ActivityResp, DeviceRow, Segment } from "@/lib/api";
 import { Page, PageHeader, RangeKey, rangeFor, Select } from "@/components/Controls";
 import { Card, DataState, StatePill, ActivityMeter, Pager } from "@/components/ui";
+import { ViewToggle, useViewMode } from "@/components/ViewToggle";
 import { TopAppsBar } from "@/components/charts";
 import { fmtDuration, fmtDateTime } from "@/lib/format";
 
@@ -27,6 +28,7 @@ function ActivityInner() {
   const [data, setData] = useState<ActivityResp | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [view, setView] = useViewMode("activity", "table");
   const LIMIT = 50;
 
   useEffect(() => {
@@ -71,6 +73,7 @@ function ActivityInner() {
             </option>
           ))}
         </Select>
+        <ViewToggle mode={view} onChange={setView} />
       </PageHeader>
 
       <DataState loading={loading} error={error}>
@@ -92,6 +95,39 @@ function ActivityInner() {
                 empty={data.segments.length === 0}
                 emptyMsg="No activity segments in this range."
               >
+                {view === "cards" ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 px-5 pb-5">
+                    {data.segments.map((s: Segment) => (
+                      <div
+                        key={s._id}
+                        className="border border-border rounded-xl p-3.5 bg-surface-2/40"
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <StatePill state={s.state} />
+                          <span className="text-xs text-faint">
+                            {fmtDateTime(s.startedAtUtc)}
+                          </span>
+                        </div>
+                        <div className="text-ink font-medium truncate">
+                          {s.app?.name || (
+                            <span className="text-faint font-normal">unknown</span>
+                          )}
+                        </div>
+                        <div className="text-xs text-muted truncate mb-3">
+                          {s.window?.url || s.window?.title || "—"}
+                        </div>
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-ink font-semibold tabular-nums">
+                            {fmtDuration(s.durationMs)}
+                          </span>
+                          {s.state === "active" && (
+                            <ActivityMeter percent={s.activityPercent} />
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
                 <div className="overflow-x-auto">
                   <table className="dt">
                     <thead>
@@ -152,6 +188,7 @@ function ActivityInner() {
                     </tbody>
                   </table>
                 </div>
+                )}
               </DataState>
               <Pager
                 page={page}
