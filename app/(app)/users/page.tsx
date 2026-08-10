@@ -1,0 +1,320 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { api, UserRow } from "@/lib/api";
+import { Page, PageHeader } from "@/components/Controls";
+import { Card, Badge, DataState } from "@/components/ui";
+import { fmtDateTime } from "@/lib/format";
+
+const ROLES = ["ADMIN", "SUB_ADMIN", "DISTRIBUTOR", "INSTALLER", "CUSTOMER"];
+
+export default function UsersPage() {
+  const [users, setUsers] = useState<UserRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [editing, setEditing] = useState<UserRow | null>(null);
+  const [creating, setCreating] = useState(false);
+
+  function load() {
+    setLoading(true);
+    api
+      .users()
+      .then(setUsers)
+      .catch((e) => setError(e.message))
+      .finally(() => setLoading(false));
+  }
+  useEffect(load, []);
+
+  return (
+    <Page>
+      <PageHeader
+        title="User Management"
+        subtitle="Employees, roles, and access"
+      >
+        <button
+          onClick={() => setCreating(true)}
+          className="px-3 py-1.5 rounded-lg bg-brand text-white text-xs font-medium"
+        >
+          + New user
+        </button>
+      </PageHeader>
+
+      <Card>
+        <DataState
+          loading={loading}
+          error={error}
+          empty={users.length === 0}
+          emptyMsg="No users yet."
+        >
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-xs text-faint border-b border-border">
+                  <th className="py-2 pr-4 font-medium">Name</th>
+                  <th className="py-2 pr-4 font-medium">Email</th>
+                  <th className="py-2 pr-4 font-medium">Role</th>
+                  <th className="py-2 pr-4 font-medium">Devices</th>
+                  <th className="py-2 pr-4 font-medium">Status</th>
+                  <th className="py-2 pr-4 font-medium">Joined</th>
+                  <th className="py-2 font-medium"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {users.map((u) => (
+                  <tr
+                    key={u.id}
+                    className="border-b border-border/60 hover:bg-surface-2"
+                  >
+                    <td className="py-2.5 pr-4 text-ink font-medium">
+                      {u.fullName}
+                    </td>
+                    <td className="py-2.5 pr-4 text-muted">{u.email}</td>
+                    <td className="py-2.5 pr-4">
+                      <Badge tone={u.role === "ADMIN" ? "brand" : "neutral"}>
+                        {u.role}
+                      </Badge>
+                    </td>
+                    <td className="py-2.5 pr-4 text-muted tabular-nums">
+                      {u.deviceCount}
+                    </td>
+                    <td className="py-2.5 pr-4">
+                      {u.isActive ? (
+                        <Badge tone="good">Active</Badge>
+                      ) : (
+                        <Badge tone="crit">Disabled</Badge>
+                      )}
+                    </td>
+                    <td className="py-2.5 pr-4 text-faint text-xs">
+                      {fmtDateTime(u.createdAt)}
+                    </td>
+                    <td className="py-2.5 text-right">
+                      <button
+                        onClick={() => setEditing(u)}
+                        className="text-xs text-brand hover:underline"
+                      >
+                        Edit
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </DataState>
+      </Card>
+
+      {creating && (
+        <CreateUserModal
+          onClose={() => setCreating(false)}
+          onSaved={() => {
+            setCreating(false);
+            load();
+          }}
+        />
+      )}
+      {editing && (
+        <EditUserModal
+          user={editing}
+          onClose={() => setEditing(null)}
+          onSaved={() => {
+            setEditing(null);
+            load();
+          }}
+        />
+      )}
+    </Page>
+  );
+}
+
+function Modal({
+  title,
+  children,
+  onClose,
+}: {
+  title: string;
+  children: React.ReactNode;
+  onClose: () => void;
+}) {
+  return (
+    <div
+      className="fixed inset-0 bg-black/40 grid place-items-center z-50 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-surface border border-border rounded-xl p-6 w-full max-w-md"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h3 className="text-base font-semibold text-ink mb-4">{title}</h3>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+const inputCls =
+  "w-full px-3 py-2 rounded-lg bg-surface-2 border border-border text-ink text-sm outline-none focus:border-brand";
+const labelCls = "block text-xs text-muted mb-1 mt-3";
+
+function CreateUserModal({
+  onClose,
+  onSaved,
+}: {
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [form, setForm] = useState({
+    fullName: "",
+    email: "",
+    password: "",
+    phoneNumber: "",
+    role: "INSTALLER",
+  });
+  const [err, setErr] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function save() {
+    setErr("");
+    setBusy(true);
+    try {
+      await api.createUser(form);
+      onSaved();
+    } catch (e: any) {
+      setErr(e.message);
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Modal title="New user" onClose={onClose}>
+      <label className={labelCls}>Full name</label>
+      <input
+        className={inputCls}
+        value={form.fullName}
+        onChange={(e) => setForm({ ...form, fullName: e.target.value })}
+      />
+      <label className={labelCls}>Email</label>
+      <input
+        className={inputCls}
+        type="email"
+        value={form.email}
+        onChange={(e) => setForm({ ...form, email: e.target.value })}
+      />
+      <label className={labelCls}>Password</label>
+      <input
+        className={inputCls}
+        type="password"
+        value={form.password}
+        onChange={(e) => setForm({ ...form, password: e.target.value })}
+      />
+      <label className={labelCls}>Phone</label>
+      <input
+        className={inputCls}
+        value={form.phoneNumber}
+        onChange={(e) => setForm({ ...form, phoneNumber: e.target.value })}
+      />
+      <label className={labelCls}>Role</label>
+      <select
+        className={inputCls}
+        value={form.role}
+        onChange={(e) => setForm({ ...form, role: e.target.value })}
+      >
+        {ROLES.map((r) => (
+          <option key={r} value={r}>
+            {r}
+          </option>
+        ))}
+      </select>
+      {err && <p className="text-xs text-crit mt-3">{err}</p>}
+      <div className="flex gap-2 mt-5">
+        <button
+          onClick={save}
+          disabled={busy}
+          className="flex-1 py-2 rounded-lg bg-brand text-white text-sm font-medium disabled:opacity-50"
+        >
+          {busy ? "Creating…" : "Create user"}
+        </button>
+        <button
+          onClick={onClose}
+          className="px-4 py-2 rounded-lg border border-border text-sm text-muted"
+        >
+          Cancel
+        </button>
+      </div>
+    </Modal>
+  );
+}
+
+function EditUserModal({
+  user,
+  onClose,
+  onSaved,
+}: {
+  user: UserRow;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [role, setRole] = useState(user.role);
+  const [isActive, setIsActive] = useState(user.isActive);
+  const [fullName, setFullName] = useState(user.fullName);
+  const [err, setErr] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function save() {
+    setErr("");
+    setBusy(true);
+    try {
+      await api.updateUser(user.id, { fullName, role, isActive });
+      onSaved();
+    } catch (e: any) {
+      setErr(e.message);
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Modal title={`Edit ${user.email}`} onClose={onClose}>
+      <label className={labelCls}>Full name</label>
+      <input
+        className={inputCls}
+        value={fullName}
+        onChange={(e) => setFullName(e.target.value)}
+      />
+      <label className={labelCls}>Role</label>
+      <select
+        className={inputCls}
+        value={role}
+        onChange={(e) => setRole(e.target.value)}
+      >
+        {ROLES.map((r) => (
+          <option key={r} value={r}>
+            {r}
+          </option>
+        ))}
+      </select>
+      <label className="flex items-center gap-2 mt-4 text-sm text-ink">
+        <input
+          type="checkbox"
+          checked={isActive}
+          onChange={(e) => setIsActive(e.target.checked)}
+        />
+        Account active
+      </label>
+      {err && <p className="text-xs text-crit mt-3">{err}</p>}
+      <div className="flex gap-2 mt-5">
+        <button
+          onClick={save}
+          disabled={busy}
+          className="flex-1 py-2 rounded-lg bg-brand text-white text-sm font-medium disabled:opacity-50"
+        >
+          {busy ? "Saving…" : "Save changes"}
+        </button>
+        <button
+          onClick={onClose}
+          className="px-4 py-2 rounded-lg border border-border text-sm text-muted"
+        >
+          Cancel
+        </button>
+      </div>
+    </Modal>
+  );
+}
