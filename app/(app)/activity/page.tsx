@@ -7,9 +7,31 @@ import { Page, PageHeader, RangeKey, rangeFor, Select } from "@/components/Contr
 import { Card, DataState, StatePill, ActivityMeter, Pager } from "@/components/ui";
 import { ViewToggle, useViewMode } from "@/components/ViewToggle";
 import { TopAppsBar } from "@/components/charts";
+import { IconExternalLink } from "@/components/icons";
 import { fmtDuration, fmtDateTime } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
+
+// A segment's window/URL cell: a real clickable link when the browser extension
+// captured a URL for the focused tab, otherwise the plain window title.
+function WindowCell({ window: w }: { window?: Segment["window"] }) {
+  const url = w?.url;
+  if (url && /^https?:\/\//i.test(url)) {
+    return (
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="group inline-flex items-center gap-1.5 text-brand hover:underline max-w-full"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <span className="truncate">{w?.title || url}</span>
+        <IconExternalLink size={13} className="shrink-0 opacity-60 group-hover:opacity-100" />
+      </a>
+    );
+  }
+  return <>{w?.title || <span className="text-faint">—</span>}</>;
+}
 
 export default function ActivityPage() {
   return (
@@ -114,7 +136,7 @@ function ActivityInner() {
                           )}
                         </div>
                         <div className="text-xs text-muted truncate mb-3">
-                          {s.window?.url || s.window?.title || "—"}
+                          <WindowCell window={s.window} />
                         </div>
                         <div className="flex items-center justify-between text-xs">
                           <span className="text-ink font-semibold tabular-nums">
@@ -164,9 +186,7 @@ function ActivityInner() {
                             )}
                           </td>
                           <td className="max-w-0 truncate text-muted">
-                            {s.window?.url || s.window?.title || (
-                              <span className="text-faint">—</span>
-                            )}
+                            <WindowCell window={s.window} />
                           </td>
                           <td className="num strong">
                             {fmtDuration(s.durationMs)}

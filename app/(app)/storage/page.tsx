@@ -17,16 +17,35 @@ export default function StoragePage() {
     label: string;
     body: { before?: number; all?: boolean };
   }>(null);
+  const [interval, setIntervalSec] = useState<number>(15);
 
   function load() {
     setLoading(true);
     api
       .storage()
-      .then(setData)
+      .then((d) => {
+        setData(d);
+        setIntervalSec(d.screenshotIntervalSec || 15);
+      })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   }
   useEffect(load, []);
+
+  async function saveInterval() {
+    setBusy(true);
+    try {
+      const clamped = Math.min(3600, Math.max(3, Math.round(interval) || 15));
+      await api.updateGlobalSettings({ screenshotIntervalSec: clamped });
+      setIntervalSec(clamped);
+      setMsg(
+        `Screenshot interval set to ${clamped}s — agents apply it on their next capture cycle.`
+      );
+      load();
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function toggleUpload() {
     if (!data) return;
@@ -173,6 +192,67 @@ export default function StoragePage() {
                 accent="var(--series-3)"
               />
             </div>
+
+            {/* Capture interval */}
+            <Card
+              title="Screenshot capture interval"
+              subtitle="How often every agent takes a screenshot (applies fleet-wide, live)"
+              className="mb-4"
+            >
+              <div className="flex flex-wrap items-end gap-4">
+                <div>
+                  <label className="block text-[11px] text-faint mb-1.5">
+                    Interval (seconds)
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min={3}
+                      max={3600}
+                      value={interval}
+                      onChange={(e) => setIntervalSec(Number(e.target.value))}
+                      className="w-28 px-3 py-2 rounded-xl bg-surface border border-border text-sm text-ink tabular-nums outline-none focus:border-brand transition-colors"
+                    />
+                    <span className="text-xs text-faint">
+                      = 1 shot every{" "}
+                      {interval >= 60
+                        ? `${(interval / 60).toFixed(interval % 60 ? 1 : 0)} min`
+                        : `${interval || 0}s`}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  {[10, 15, 30, 60, 300].map((p) => (
+                    <button
+                      key={p}
+                      onClick={() => setIntervalSec(p)}
+                      className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
+                        interval === p
+                          ? "bg-brand text-white border-brand"
+                          : "text-muted border-border hover:bg-surface-2 hover:text-ink"
+                      }`}
+                    >
+                      {p >= 60 ? `${p / 60}m` : `${p}s`}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  onClick={saveInterval}
+                  disabled={busy || interval === data.screenshotIntervalSec}
+                  className="ml-auto px-4 py-2 rounded-xl bg-brand text-white text-sm font-semibold disabled:opacity-40 transition-colors"
+                >
+                  {busy ? "Saving…" : "Save interval"}
+                </button>
+              </div>
+              <p className="text-[11px] text-faint mt-3 leading-relaxed">
+                Lower = more screenshots and more R2 storage. Shorter than 3s is not
+                allowed. Current fleet default:{" "}
+                <span className="text-muted font-medium tabular-nums">
+                  {data.screenshotIntervalSec}s
+                </span>
+                .
+              </p>
+            </Card>
 
             {/* Bulk delete */}
             <Card

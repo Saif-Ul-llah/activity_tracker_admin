@@ -105,12 +105,19 @@ export const api = {
   activity: (r?: Range) => call<ActivityResp>(`/api/admin/activity${qs(r)}`),
   screenshots: (r?: Range) => call<ScreenshotResp>(`/api/admin/screenshots${qs(r)}`),
   events: (r?: Range) => call<EventsResp>(`/api/admin/events${qs(r)}`),
+  browserTabs: (r?: { deviceId?: string; userId?: string }) =>
+    call<BrowserSnapshotRow[]>(`/api/admin/browser-tabs${qs(r as Range)}`),
   storage: () => call<Storage>(`/api/admin/storage`),
-  updateGlobalSettings: (b: { screenshotUploadEnabled?: boolean; r2LimitBytes?: number }) =>
-    call<{ screenshotUploadEnabled: boolean; r2LimitBytes: number }>(
-      `/api/admin/settings`,
-      { method: "PATCH", body: b }
-    ),
+  updateGlobalSettings: (b: {
+    screenshotUploadEnabled?: boolean;
+    r2LimitBytes?: number;
+    screenshotIntervalSec?: number;
+  }) =>
+    call<{
+      screenshotUploadEnabled: boolean;
+      r2LimitBytes: number;
+      screenshotIntervalSec: number;
+    }>(`/api/admin/settings`, { method: "PATCH", body: b }),
   deleteScreenshots: (b: {
     ids?: string[];
     deviceId?: string;
@@ -216,7 +223,29 @@ export interface Storage {
   limitBytes: number;
   usedPercent: number;
   screenshotUploadEnabled: boolean;
+  screenshotIntervalSec: number;
   byDay: { day: string; bytes: number; count: number }[];
+}
+export interface BrowserTab {
+  url: string;
+  title: string;
+  active: boolean;
+  favIconUrl?: string;
+}
+export interface BrowserSnapshotRow {
+  id: string;
+  deviceId: string;
+  deviceName: string;
+  platform: string;
+  userId: string;
+  userName: string;
+  browser: string;
+  activeUrl: string;
+  activeTitle: string;
+  tabs: BrowserTab[];
+  tabCount: number;
+  capturedAtUtc: string;
+  updatedAt: string;
 }
 export interface EventsResp {
   items: {
