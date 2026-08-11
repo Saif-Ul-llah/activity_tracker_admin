@@ -6,18 +6,23 @@ users.
 
 ## Features
 
-- **Overview** — KPI tiles, activity-over-time (stacked area by state), top
+- **Overview** — KPI tiles, activity-over-time (stacked bars/area by state), top
   applications, time-by-state donut, and a day×hour activity heatmap.
-- **Activity History** — per-segment timeline with app, window/URL, duration,
-  activity %, and input counts; filterable by device and date range.
-- **Screenshots** — grid of previews (served via short-lived presigned R2 URLs) with a
-  lightbox.
-- **Devices** — registered agents, session type / degraded flags, last-seen, and
-  token revoke/restore.
-- **User Management** — list employees, create users, edit role, enable/disable.
+- **Activity History** — per-segment timeline (app, window/URL, duration, activity %,
+  input), filterable by device and date range, **paginated**.
+- **Screenshots** — preview grid **or** list view, with a lightbox, multi-select
+  **bulk delete**, and pagination (served via short-lived presigned R2 URLs).
+- **Devices** — registered agents, session type / degraded flags, last-seen, token
+  revoke/restore, and a **single-device detail page** (per-device KPIs, timeline, top
+  apps, recent segments, and **clear-history** by time range / app).
+- **Storage** — R2 usage vs limit gauge, **pause/resume R2 upload** (agents then keep
+  screenshots locally), and **bulk delete** (older-than-7d/30d/all).
+- **User Management** — summary stats, **search + role filter**, create users, edit
+  role/active, **delete** (row icon, edit modal, or multi-select bulk delete).
 - **Events** — agent telemetry (crashes, clock jumps, quota).
 
-Charts use a colorblind-safe categorical palette and are light/dark aware.
+Every table/tab has a **List ↔ Cards** view toggle (Grid ↔ List for screenshots),
+persisted per page. Charts use a colorblind-safe categorical palette; light/dark aware.
 
 ## Setup
 
@@ -27,7 +32,9 @@ cp .env.example .env.local   # optional; defaults to the production API
 npm run dev                  # http://localhost:3001
 ```
 
-Sign in with an **ADMIN** or **SUB_ADMIN** account from the backend.
+Sign in with an **ADMIN** or **SUB_ADMIN** account. Public sign-up is disabled — the
+first admin is created with the backend's `npm run seed:admin`; other users are created
+from within this panel (User Management → New user).
 
 ## Configuration
 
