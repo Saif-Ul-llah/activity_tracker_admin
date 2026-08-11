@@ -12,11 +12,15 @@ users.
   input), filterable by device and date range, **paginated**.
 - **Screenshots** — preview grid **or** list view, with a lightbox, multi-select
   **bulk delete**, and pagination (served via short-lived presigned R2 URLs).
+- **Browser Tabs** — every open tab per device/browser as **clickable links**
+  (cards/list toggle, favicons, active-tab highlight), reported by the browser
+  extension. Activity History URLs are clickable too.
 - **Devices** — registered agents, session type / degraded flags, last-seen, token
   revoke/restore, and a **single-device detail page** (per-device KPIs, timeline, top
   apps, recent segments, and **clear-history** by time range / app).
 - **Storage** — R2 usage vs limit gauge, **pause/resume R2 upload** (agents then keep
-  screenshots locally), and **bulk delete** (older-than-7d/30d/all).
+  screenshots locally), fleet-wide **screenshot capture-interval** control, and **bulk
+  delete** (older-than-7d/30d/all).
 - **User Management** — summary stats, **search + role filter**, create users, edit
   role/active, **delete** (row icon, edit modal, or multi-select bulk delete).
 - **Events** — agent telemetry (crashes, clock jumps, quota).
