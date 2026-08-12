@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { api, BrowserSnapshotRow } from "@/lib/api";
-import { Page, PageHeader } from "@/components/Controls";
+import { Page, PageHeader, RefreshButton } from "@/components/Controls";
 import { Card, Badge, DataState } from "@/components/ui";
 import { ViewToggle, useViewMode } from "@/components/ViewToggle";
 import { IconGlobe, IconExternalLink } from "@/components/icons";
@@ -130,13 +130,7 @@ export default function BrowserTabsPage() {
             : "Open tabs reported by the browser extension"
         }
       >
-        <button
-          onClick={load}
-          className="px-3 py-2 rounded-xl bg-surface border border-border text-xs font-medium text-muted hover:text-ink transition-colors"
-          style={{ boxShadow: "var(--shadow)" }}
-        >
-          Refresh
-        </button>
+        <RefreshButton onClick={load} spinning={loading} />
         <ViewToggle mode={view} onChange={setView} />
       </PageHeader>
 

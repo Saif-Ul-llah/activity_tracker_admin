@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { api, Storage } from "@/lib/api";
-import { Page, PageHeader } from "@/components/Controls";
+import { Page, PageHeader, RefreshButton } from "@/components/Controls";
 import { Card, Kpi, Badge, DataState } from "@/components/ui";
 import { IconStorage, IconScreenshot, IconTrash } from "@/components/icons";
 import { fmtBytes } from "@/lib/format";
@@ -86,7 +86,9 @@ export default function StoragePage() {
 
   return (
     <Page>
-      <PageHeader title="Storage" subtitle="Cloudflare R2 usage and controls" />
+      <PageHeader title="Storage" subtitle="Cloudflare R2 usage and controls">
+        <RefreshButton onClick={load} spinning={loading} />
+      </PageHeader>
 
       <DataState loading={loading} error={error}>
         {data && (

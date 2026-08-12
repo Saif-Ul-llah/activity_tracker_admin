@@ -3,7 +3,7 @@
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { api, DeviceRow, Shot } from "@/lib/api";
-import { Page, PageHeader, RangeKey, rangeFor, Select } from "@/components/Controls";
+import { Page, PageHeader, RangeKey, rangeFor, Select, RefreshButton } from "@/components/Controls";
 import { Badge, DataState, Pager } from "@/components/ui";
 import { IconTrash } from "@/components/icons";
 import { ViewToggle, useViewMode } from "@/components/ViewToggle";
@@ -135,6 +135,7 @@ function ScreenshotsInner() {
             </option>
           ))}
         </Select>
+        <RefreshButton onClick={() => reload()} spinning={loading} />
         <ViewToggle
           mode={view}
           onChange={setView}

@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { api, ActivityResp, DeviceRow, Segment } from "@/lib/api";
-import { Page, PageHeader, RangeKey, rangeFor, Select } from "@/components/Controls";
+import { Page, PageHeader, RangeKey, rangeFor, Select, RefreshButton } from "@/components/Controls";
 import { Card, DataState, StatePill, ActivityMeter, Pager } from "@/components/ui";
 import { ViewToggle, useViewMode } from "@/components/ViewToggle";
 import { TopAppsBar } from "@/components/charts";
@@ -51,6 +51,7 @@ function ActivityInner() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [view, setView] = useViewMode("activity", "table");
+  const [refreshKey, setRefreshKey] = useState(0);
   const LIMIT = 50;
 
   useEffect(() => {
@@ -77,7 +78,7 @@ function ActivityInner() {
     return () => {
       alive = false;
     };
-  }, [range, deviceId, page]);
+  }, [range, deviceId, page, refreshKey]);
 
   return (
     <Page>
@@ -95,6 +96,7 @@ function ActivityInner() {
             </option>
           ))}
         </Select>
+        <RefreshButton onClick={() => setRefreshKey((k) => k + 1)} spinning={loading} />
         <ViewToggle mode={view} onChange={setView} />
       </PageHeader>
 

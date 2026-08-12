@@ -2,6 +2,31 @@
 
 import { ReactNode } from "react";
 import { DAY_MS } from "@/lib/format";
+import { IconRefresh } from "./icons";
+
+// Reusable "reload latest data" button. Pass the page's load/reload fn and, optionally,
+// a `spinning` flag (usually the page's loading state) to animate the icon.
+export function RefreshButton({
+  onClick,
+  spinning,
+}: {
+  onClick: () => void;
+  spinning?: boolean;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={spinning}
+      title="Refresh data"
+      aria-label="Refresh data"
+      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-surface border border-border text-xs font-medium text-muted hover:text-ink hover:border-border-strong transition-colors disabled:opacity-60"
+      style={{ boxShadow: "var(--shadow)" }}
+    >
+      <IconRefresh size={15} className={spinning ? "animate-spin" : ""} />
+      <span className="hidden sm:inline">Refresh</span>
+    </button>
+  );
+}
 
 export type RangeKey = "today" | "7d" | "30d";
 

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { api, EventsResp } from "@/lib/api";
-import { Page, PageHeader, RangeKey, rangeFor } from "@/components/Controls";
+import { Page, PageHeader, RangeKey, rangeFor, RefreshButton } from "@/components/Controls";
 import { Card, Badge, DataState, Pager } from "@/components/ui";
 import { ViewToggle, useViewMode } from "@/components/ViewToggle";
 import { fmtDateTime } from "@/lib/format";
@@ -22,6 +22,7 @@ export default function EventsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [view, setView] = useViewMode("events", "table");
+  const [refreshKey, setRefreshKey] = useState(0);
   const LIMIT = 50;
 
   useEffect(() => setPage(1), [range]);
@@ -37,7 +38,7 @@ export default function EventsPage() {
     return () => {
       alive = false;
     };
-  }, [range, page]);
+  }, [range, page, refreshKey]);
 
   return (
     <Page>
@@ -47,6 +48,7 @@ export default function EventsPage() {
         range={range}
         onRange={setRange}
       >
+        <RefreshButton onClick={() => setRefreshKey((k) => k + 1)} spinning={loading} />
         <ViewToggle mode={view} onChange={setView} />
       </PageHeader>
 

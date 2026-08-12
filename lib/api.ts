@@ -1,6 +1,6 @@
 // Thin client for the tracker backend admin API. Attaches the stored JWT and
 // normalizes the { status, data } envelope. All calls are client-side.
-import { getToken, clearAuth } from "./auth";
+import { getToken, getRefreshToken, setTokens, clearAuth } from "./auth";
 
 const BASE =
   process.env.NEXT_PUBLIC_API_BASE ||
@@ -12,9 +12,50 @@ export class ApiError extends Error {
   }
 }
 
+// Single-flight refresh: if several requests 401 at once (e.g. after idle), they all
+// await the SAME refresh call instead of firing N refreshes / redirecting to login.
+let refreshInFlight: Promise<boolean> | null = null;
+
+async function refreshAccessToken(): Promise<boolean> {
+  const refreshToken = getRefreshToken();
+  if (!refreshToken) return false;
+  if (refreshInFlight) return refreshInFlight;
+
+  refreshInFlight = (async () => {
+    try {
+      const res = await fetch(`${BASE}/api/refresh-token`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ refreshToken }),
+        cache: "no-store",
+      });
+      if (!res.ok) return false;
+      const json = await res.json().catch(() => null);
+      const data = json?.data ?? json;
+      if (data?.accessToken) {
+        setTokens(data.accessToken, data.refreshToken);
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
+    } finally {
+      refreshInFlight = null;
+    }
+  })();
+
+  return refreshInFlight;
+}
+
+function forceLogout(): never {
+  clearAuth();
+  if (typeof window !== "undefined") window.location.href = "/login";
+  throw new ApiError(401, "Session expired");
+}
+
 async function call<T>(
   path: string,
-  opts: { method?: string; body?: unknown; auth?: boolean } = {}
+  opts: { method?: string; body?: unknown; auth?: boolean; _retried?: boolean } = {}
 ): Promise<T> {
   const headers: Record<string, string> = { "content-type": "application/json" };
   if (opts.auth !== false) {
@@ -28,6 +69,13 @@ async function call<T>(
     cache: "no-store",
   });
 
+  // Access token expired: try a silent refresh once, then replay the request.
+  if (res.status === 401 && opts.auth !== false && !opts._retried) {
+    const ok = await refreshAccessToken();
+    if (ok) return call<T>(path, { ...opts, _retried: true });
+    forceLogout();
+  }
+
   let json: any = null;
   try {
     json = await res.json();
@@ -35,11 +83,9 @@ async function call<T>(
     /* empty body */
   }
 
-  if (res.status === 401) {
-    clearAuth();
-    if (typeof window !== "undefined") window.location.href = "/login";
-    throw new ApiError(401, "Session expired");
-  }
+  // Authed request still 401 after a refresh attempt → session is truly gone.
+  // For unauthenticated calls (e.g. login), surface the error instead of redirecting.
+  if (res.status === 401 && opts.auth !== false) forceLogout();
   if (!res.ok) {
     throw new ApiError(res.status, json?.message || `Request failed (${res.status})`);
   }

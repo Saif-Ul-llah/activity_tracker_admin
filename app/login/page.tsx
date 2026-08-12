@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { login } from "@/lib/api";
-import { setToken, decode } from "@/lib/auth";
+import { setTokens, decode } from "@/lib/auth";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -17,14 +17,14 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
     try {
-      const { accessToken } = await login(email.trim(), password);
+      const { accessToken, refreshToken } = await login(email.trim(), password);
       const claims = decode(accessToken);
       if (!claims || (claims.role !== "ADMIN" && claims.role !== "SUB_ADMIN")) {
         setError("This account is not an administrator.");
         setLoading(false);
         return;
       }
-      setToken(accessToken);
+      setTokens(accessToken, refreshToken);
       router.push("/");
     } catch (err: any) {
       setError(err?.message || "Sign in failed");

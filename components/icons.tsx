@@ -118,6 +118,11 @@ export const IconMonitor = ({ className, size }: P) => (
     <path d="M8 20h8M12 16v4" />
   </svg>
 );
+export const IconRefresh = ({ className, size }: P) => (
+  <svg {...base(size)} className={className}>
+    <path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v5h-5" />
+  </svg>
+);
 export const IconGlobe = ({ className, size }: P) => (
   <svg {...base(size)} className={className}>
     <circle cx="12" cy="12" r="9" />

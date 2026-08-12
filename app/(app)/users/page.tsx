@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { api, UserRow } from "@/lib/api";
-import { Page, PageHeader } from "@/components/Controls";
+import { Page, PageHeader, RefreshButton } from "@/components/Controls";
 import { Card, Badge, DataState, Avatar, Kpi } from "@/components/ui";
 import { IconPlus, IconTrash, IconSearch, IconUsers } from "@/components/icons";
 import { ViewToggle, useViewMode } from "@/components/ViewToggle";
@@ -112,6 +112,7 @@ export default function UsersPage() {
         title="User Management"
         subtitle="Employees, roles, and access"
       >
+        <RefreshButton onClick={load} spinning={loading} />
         <ViewToggle mode={view} onChange={setView} />
         <button
           onClick={() => setCreating(true)}

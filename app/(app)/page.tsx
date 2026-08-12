@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { api, Overview } from "@/lib/api";
-import { Page, PageHeader, RangeKey, rangeFor } from "@/components/Controls";
+import { Page, PageHeader, RangeKey, rangeFor, RefreshButton } from "@/components/Controls";
 import { Card, Kpi, DataState } from "@/components/ui";
 import {
   ActivityTimeline,
@@ -23,6 +23,7 @@ export default function OverviewPage() {
   const [data, setData] = useState<Overview | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     let alive = true;
@@ -36,7 +37,7 @@ export default function OverviewPage() {
     return () => {
       alive = false;
     };
-  }, [range]);
+  }, [range, refreshKey]);
 
   const k = data?.kpis;
   const noData = !!data && k?.segmentCount === 0;
@@ -48,7 +49,9 @@ export default function OverviewPage() {
         subtitle="Fleet-wide activity and analytics"
         range={range}
         onRange={setRange}
-      />
+      >
+        <RefreshButton onClick={() => setRefreshKey((k) => k + 1)} spinning={loading} />
+      </PageHeader>
 
       <DataState loading={loading} error={error}>
         {k && (

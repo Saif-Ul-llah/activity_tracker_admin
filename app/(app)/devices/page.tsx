@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { api, DeviceRow } from "@/lib/api";
-import { Page, PageHeader } from "@/components/Controls";
+import { Page, PageHeader, RefreshButton } from "@/components/Controls";
 import { Card, Badge, DataState } from "@/components/ui";
 import { ViewToggle, useViewMode } from "@/components/ViewToggle";
 import { fmtDuration, relativeTime } from "@/lib/format";
@@ -44,6 +44,7 @@ export default function DevicesPage() {
   return (
     <Page>
       <PageHeader title="Devices" subtitle="Registered agents across the fleet">
+        <RefreshButton onClick={load} spinning={loading} />
         <ViewToggle mode={view} onChange={setView} />
       </PageHeader>
 
