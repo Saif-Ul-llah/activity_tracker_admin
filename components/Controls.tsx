@@ -112,5 +112,9 @@ export function Select({
 }
 
 export function Page({ children }: { children: ReactNode }) {
-  return <div className="px-7 py-7 max-w-[1360px] mx-auto">{children}</div>;
+  return (
+    <div className="px-4 py-5 sm:px-6 md:px-7 sm:py-7 max-w-[1360px] mx-auto">
+      {children}
+    </div>
+  );
 }

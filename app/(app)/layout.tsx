@@ -23,7 +23,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen bg-bg">
       <Sidebar />
-      <main className="flex-1 min-w-0">{children}</main>
+      {/* pt-14 clears the fixed mobile top bar; removed at lg where the sidebar is inline. */}
+      <main className="flex-1 min-w-0 pt-14 lg:pt-0">{children}</main>
     </div>
   );
 }
