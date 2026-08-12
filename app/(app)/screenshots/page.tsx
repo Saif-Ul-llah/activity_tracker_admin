@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { api, DeviceRow, Shot } from "@/lib/api";
 import { Page, PageHeader, RangeKey, rangeFor, Select } from "@/components/Controls";
@@ -29,7 +29,9 @@ function ScreenshotsInner() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [lightbox, setLightbox] = useState<Shot | null>(null);
+  // Lightbox tracks the index in `shots` so arrow keys can move between screenshots.
+  const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
+  const lightbox = lightboxIdx != null ? shots[lightboxIdx] ?? null : null;
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
   const [view, setView] = useViewMode("screenshots", "cards");
@@ -90,6 +92,33 @@ function ScreenshotsInner() {
     }
   }
 
+  // ── Lightbox navigation ────────────────────────────────────────────────────────
+  const showPrev = useCallback(() => {
+    setLightboxIdx((i) => (i == null ? i : Math.max(0, i - 1)));
+  }, []);
+  const showNext = useCallback(() => {
+    setLightboxIdx((i) =>
+      i == null ? i : Math.min(shots.length - 1, i + 1)
+    );
+  }, [shots.length]);
+
+  // Arrow keys move between screenshots; Escape closes. Only bound while open.
+  useEffect(() => {
+    if (lightboxIdx == null) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setLightboxIdx(null);
+      else if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        showPrev();
+      } else if (e.key === "ArrowRight") {
+        e.preventDefault();
+        showNext();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [lightboxIdx, showPrev, showNext]);
+
   return (
     <Page>
       <PageHeader
@@ -145,7 +174,7 @@ function ScreenshotsInner() {
       >
         {view === "table" ? (
           <div className="bg-surface border border-border rounded-2xl overflow-hidden" style={{ boxShadow: "var(--shadow)" }}>
-            {shots.map((s) => {
+            {shots.map((s, i) => {
               const isSel = selected.has(s.id);
               return (
                 <div
@@ -161,7 +190,7 @@ function ScreenshotsInner() {
                     className="accent-brand cursor-pointer"
                   />
                   <button
-                    onClick={() => setLightbox(s)}
+                    onClick={() => setLightboxIdx(i)}
                     className="h-11 w-20 rounded-md overflow-hidden bg-surface-2 shrink-0"
                   >
                     {s.url ? (
@@ -187,7 +216,7 @@ function ScreenshotsInner() {
           </div>
         ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-          {shots.map((s) => {
+          {shots.map((s, i) => {
             const isSel = selected.has(s.id);
             return (
               <div
@@ -202,7 +231,7 @@ function ScreenshotsInner() {
                     <img
                       src={s.url}
                       alt="screenshot"
-                      onClick={() => setLightbox(s)}
+                      onClick={() => setLightboxIdx(i)}
                       className="w-full h-full object-cover cursor-pointer group-hover:scale-[1.02] transition-transform"
                       loading="lazy"
                     />
@@ -250,23 +279,56 @@ function ScreenshotsInner() {
         )}
       </DataState>
 
-      {lightbox && lightbox.url && (
+      {lightbox && lightbox.url && lightboxIdx != null && (
         <div
           className="fixed inset-0 bg-black/80 grid place-items-center z-50 p-6"
-          onClick={() => setLightbox(null)}
+          onClick={() => setLightboxIdx(null)}
         >
+          {/* Prev */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              showPrev();
+            }}
+            disabled={lightboxIdx <= 0}
+            aria-label="Previous screenshot"
+            className="absolute left-3 sm:left-6 top-1/2 -translate-y-1/2 h-11 w-11 grid place-items-center rounded-full bg-white/10 hover:bg-white/20 text-white text-2xl disabled:opacity-25 disabled:cursor-default transition-colors"
+          >
+            ‹
+          </button>
+          {/* Next */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              showNext();
+            }}
+            disabled={lightboxIdx >= shots.length - 1}
+            aria-label="Next screenshot"
+            className="absolute right-3 sm:right-6 top-1/2 -translate-y-1/2 h-11 w-11 grid place-items-center rounded-full bg-white/10 hover:bg-white/20 text-white text-2xl disabled:opacity-25 disabled:cursor-default transition-colors"
+          >
+            ›
+          </button>
+
           <div className="max-w-6xl w-full" onClick={(e) => e.stopPropagation()}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
+              key={lightbox.id}
               src={lightbox.url}
               alt="screenshot"
-              className="w-full rounded-lg shadow-2xl"
+              className="w-full max-h-[80vh] object-contain rounded-lg shadow-2xl"
             />
             <div className="text-center text-xs text-white/70 mt-3">
               {fmtDateTime(lightbox.capturedAtUtc)} · Display{" "}
               {lightbox.displayIndex} · {fmtBytes(lightbox.bytes)}
+              <span className="mx-2 text-white/40">·</span>
+              <span className="tabular-nums">
+                {lightboxIdx + 1} / {shots.length}
+              </span>
+              <span className="ml-3 text-white/40 hidden sm:inline">
+                ← → to navigate · Esc to close
+              </span>
               <button
-                onClick={() => setLightbox(null)}
+                onClick={() => setLightboxIdx(null)}
                 className="ml-4 underline"
               >
                 Close
