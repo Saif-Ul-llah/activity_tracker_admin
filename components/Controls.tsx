@@ -55,14 +55,14 @@ export function PageHeader({
   children?: ReactNode;
 }) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
-      <div>
-        <h1 className="text-[22px] font-semibold text-ink tracking-tight">
+    <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between mb-5 sm:mb-6">
+      <div className="min-w-0">
+        <h1 className="text-lg sm:text-[22px] font-semibold text-ink tracking-tight">
           {title}
         </h1>
-        {subtitle && <p className="text-sm text-muted mt-1">{subtitle}</p>}
+        {subtitle && <p className="text-sm text-muted mt-0.5 sm:mt-1">{subtitle}</p>}
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         {children}
         {range && onRange && (
           <div
@@ -73,7 +73,7 @@ export function PageHeader({
               <button
                 key={k}
                 onClick={() => onRange(k)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
                   range === k
                     ? "bg-brand text-white shadow-sm"
                     : "text-muted hover:text-ink"

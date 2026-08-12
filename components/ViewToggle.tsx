@@ -13,7 +13,18 @@ export function useViewMode(key: string, def: ViewMode = "table"): [
   const [mode, setMode] = useState<ViewMode>(def);
   useEffect(() => {
     const stored = localStorage.getItem(`view_${key}`) as ViewMode | null;
-    if (stored === "table" || stored === "cards") setMode(stored);
+    if (stored === "table" || stored === "cards") {
+      setMode(stored);
+      return;
+    }
+    // No explicit choice yet: on phones, default to cards — wide tables clip badly on
+    // narrow screens, whereas the card layout stacks cleanly. Desktop keeps `def`.
+    if (
+      typeof window !== "undefined" &&
+      window.matchMedia("(max-width: 767px)").matches
+    ) {
+      setMode("cards");
+    }
   }, [key]);
   const set = (m: ViewMode) => {
     setMode(m);
