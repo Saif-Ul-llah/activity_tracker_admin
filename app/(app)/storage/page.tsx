@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { api, Storage } from "@/lib/api";
-import { Page, PageHeader, RefreshButton } from "@/components/Controls";
+import { api, Storage, DeviceRow } from "@/lib/api";
+import { Page, PageHeader, RefreshButton, Select } from "@/components/Controls";
 import { Card, Kpi, Badge, DataState } from "@/components/ui";
 import { IconStorage, IconScreenshot, IconTrash } from "@/components/icons";
 import { fmtBytes } from "@/lib/format";
@@ -15,9 +15,45 @@ export default function StoragePage() {
   const [msg, setMsg] = useState("");
   const [confirmDelete, setConfirmDelete] = useState<null | {
     label: string;
-    body: { before?: number; all?: boolean };
+    body: {
+      before?: number;
+      all?: boolean;
+      deviceId?: string;
+      from?: number;
+      to?: number;
+    };
   }>(null);
   const [interval, setIntervalSec] = useState<number>(15);
+
+  // Scoped delete (by device and/or date range).
+  const [devices, setDevices] = useState<DeviceRow[]>([]);
+  const [scDevice, setScDevice] = useState("");
+  const [scFrom, setScFrom] = useState("");
+  const [scTo, setScTo] = useState("");
+  useEffect(() => {
+    api.devices().then(setDevices).catch(() => {});
+  }, []);
+
+  const scFromMs = scFrom ? Date.parse(scFrom + "T00:00:00.000Z") : undefined;
+  const scToMs = scTo ? Date.parse(scTo + "T23:59:59.999Z") : undefined;
+  const scRangeInvalid =
+    scFromMs !== undefined && scToMs !== undefined && scFromMs > scToMs;
+  const scNoScope = !scDevice && !scFromMs && !scToMs;
+  const scDeviceName = scDevice
+    ? devices.find((d) => d.id === scDevice)?.name ?? "the selected device"
+    : "all devices";
+
+  function queueScopedDelete() {
+    if (scNoScope || scRangeInvalid) return;
+    const range =
+      scFrom || scTo
+        ? ` (${scFrom || "start"} → ${scTo || "now"})`
+        : " (all time)";
+    setConfirmDelete({
+      label: `screenshots for ${scDeviceName}${range}`,
+      body: { deviceId: scDevice || undefined, from: scFromMs, to: scToMs },
+    });
+  }
 
   function load() {
     setLoading(true);
@@ -293,6 +329,71 @@ export default function StoragePage() {
                 >
                   Delete all screenshots
                 </DeleteBtn>
+              </div>
+
+              {/* Scoped delete: by device and/or date range */}
+              <div className="mt-5 pt-5 border-t border-border">
+                <div className="text-xs font-semibold text-ink mb-1">
+                  Delete by device or date range
+                </div>
+                <p className="text-[11px] text-faint mb-3">
+                  Pick a device, a date range, or both. Dates are inclusive (UTC).
+                </p>
+                <div className="flex flex-wrap items-end gap-3">
+                  <div>
+                    <label className="block text-[11px] uppercase tracking-wide text-faint mb-1">
+                      Device
+                    </label>
+                    <Select value={scDevice} onChange={setScDevice}>
+                      <option value="">All devices</option>
+                      {devices.map((d) => (
+                        <option key={d.id} value={d.id}>
+                          {d.name}
+                        </option>
+                      ))}
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="block text-[11px] uppercase tracking-wide text-faint mb-1">
+                      From
+                    </label>
+                    <input
+                      type="date"
+                      value={scFrom}
+                      onChange={(e) => setScFrom(e.target.value)}
+                      className="px-3 py-2 rounded-xl bg-surface border border-border text-sm text-ink outline-none focus:border-brand transition-colors"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] uppercase tracking-wide text-faint mb-1">
+                      To
+                    </label>
+                    <input
+                      type="date"
+                      value={scTo}
+                      onChange={(e) => setScTo(e.target.value)}
+                      className="px-3 py-2 rounded-xl bg-surface border border-border text-sm text-ink outline-none focus:border-brand transition-colors"
+                    />
+                  </div>
+                  <button
+                    onClick={queueScopedDelete}
+                    disabled={scNoScope || scRangeInvalid}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold text-crit border border-crit/30 bg-crit/10 hover:bg-crit/20 disabled:opacity-40 transition-colors"
+                  >
+                    <IconTrash size={15} />
+                    Delete
+                  </button>
+                </div>
+                {scRangeInvalid && (
+                  <p className="text-xs text-crit mt-2">
+                    “From” must be before “To”.
+                  </p>
+                )}
+                {scNoScope && (
+                  <p className="text-[11px] text-faint mt-2">
+                    Choose a device and/or a date range to enable delete.
+                  </p>
+                )}
               </div>
             </Card>
           </>
