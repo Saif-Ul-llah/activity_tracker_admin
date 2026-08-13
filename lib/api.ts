@@ -168,6 +168,8 @@ export const api = {
     ids?: string[];
     deviceId?: string;
     before?: number;
+    from?: number;
+    to?: number;
     all?: boolean;
   }) =>
     call<{ deleted: number; freedFromR2: number }>(

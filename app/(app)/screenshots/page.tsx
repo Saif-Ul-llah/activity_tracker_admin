@@ -35,6 +35,12 @@ function ScreenshotsInner() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
   const [view, setView] = useViewMode("screenshots", "cards");
+  // Scoped delete (by device filter + optional date range).
+  const [delOpen, setDelOpen] = useState(false);
+  const [delFrom, setDelFrom] = useState("");
+  const [delTo, setDelTo] = useState("");
+  const [delBusy, setDelBusy] = useState(false);
+  const [delMsg, setDelMsg] = useState("");
   const LIMIT = 48;
 
   useEffect(() => {
@@ -92,6 +98,39 @@ function ScreenshotsInner() {
     }
   }
 
+  // ── Scoped delete (device filter + date range) ─────────────────────────────────
+  const delFromMs = delFrom ? Date.parse(delFrom + "T00:00:00.000Z") : undefined;
+  const delToMs = delTo ? Date.parse(delTo + "T23:59:59.999Z") : undefined;
+  const delRangeInvalid =
+    delFromMs !== undefined && delToMs !== undefined && delFromMs > delToMs;
+  const delDeviceName = deviceId
+    ? devices.find((d) => d.id === deviceId)?.name ?? "this device"
+    : "";
+
+  async function runScopedDelete() {
+    // Safety: without a device AND without a date range this would wipe everything —
+    // require at least one scoping selector.
+    if (!deviceId && !delFromMs && !delToMs) return;
+    setDelBusy(true);
+    setDelMsg("");
+    try {
+      const res = await api.deleteScreenshots({
+        deviceId: deviceId || undefined,
+        from: delFromMs,
+        to: delToMs,
+      });
+      setDelMsg(
+        `Deleted ${res.deleted.toLocaleString()} screenshots (${res.freedFromR2.toLocaleString()} removed from R2).`
+      );
+      setSelected(new Set());
+      reload();
+    } catch (e: any) {
+      setDelMsg(e.message);
+    } finally {
+      setDelBusy(false);
+    }
+  }
+
   // ── Lightbox navigation ────────────────────────────────────────────────────────
   const showPrev = useCallback(() => {
     setLightboxIdx((i) => (i == null ? i : Math.max(0, i - 1)));
@@ -136,6 +175,16 @@ function ScreenshotsInner() {
           ))}
         </Select>
         <RefreshButton onClick={() => reload()} spinning={loading} />
+        <button
+          onClick={() => {
+            setDelMsg("");
+            setDelOpen(true);
+          }}
+          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-crit border border-crit/30 bg-crit/10 hover:bg-crit/20 transition-colors"
+        >
+          <IconTrash size={14} />
+          Delete…
+        </button>
         <ViewToggle
           mode={view}
           onChange={setView}
@@ -331,6 +380,105 @@ function ScreenshotsInner() {
               <button
                 onClick={() => setLightboxIdx(null)}
                 className="ml-4 underline"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Scoped delete modal: device (from the top filter) + optional date range */}
+      {delOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 grid place-items-center z-50 p-4"
+          onClick={() => !delBusy && setDelOpen(false)}
+        >
+          <div
+            className="bg-surface border border-border rounded-2xl p-6 w-full max-w-md"
+            style={{ boxShadow: "var(--shadow-lg)" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-2 mb-1 text-crit">
+              <IconTrash size={20} />
+              <h3 className="text-base font-semibold text-ink">Delete screenshots</h3>
+            </div>
+            <p className="text-sm text-muted mb-4">
+              Scope:{" "}
+              <span className="text-ink font-medium">
+                {delDeviceName || "All devices"}
+              </span>
+              . Choose a date range, or leave both empty to delete everything in scope.
+            </p>
+
+            {!deviceId && (
+              <div className="mb-3">
+                <label className="block text-[11px] uppercase tracking-wide text-faint mb-1">
+                  Device
+                </label>
+                <Select value={deviceId} onChange={setDeviceId}>
+                  <option value="">All devices</option>
+                  {devices.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.name}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+            )}
+
+            <div className="flex gap-3 mb-4">
+              <div className="flex-1">
+                <label className="block text-[11px] uppercase tracking-wide text-faint mb-1">
+                  From
+                </label>
+                <input
+                  type="date"
+                  value={delFrom}
+                  onChange={(e) => setDelFrom(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-surface-2 border border-border text-sm text-ink outline-none"
+                />
+              </div>
+              <div className="flex-1">
+                <label className="block text-[11px] uppercase tracking-wide text-faint mb-1">
+                  To
+                </label>
+                <input
+                  type="date"
+                  value={delTo}
+                  onChange={(e) => setDelTo(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-surface-2 border border-border text-sm text-ink outline-none"
+                />
+              </div>
+            </div>
+
+            {delRangeInvalid && (
+              <p className="text-xs text-crit mb-2">“From” must be before “To”.</p>
+            )}
+            {!deviceId && !delFrom && !delTo && (
+              <p className="text-xs text-warn mb-2">
+                Pick a device or a date range — this won’t delete across all devices
+                and all time.
+              </p>
+            )}
+            {delMsg && <p className="text-sm text-brand mb-2">{delMsg}</p>}
+
+            <div className="flex gap-2 mt-2">
+              <button
+                onClick={runScopedDelete}
+                disabled={
+                  delBusy ||
+                  delRangeInvalid ||
+                  (!deviceId && !delFrom && !delTo)
+                }
+                className="flex-1 py-2 rounded-xl bg-crit text-white text-sm font-semibold disabled:opacity-40"
+              >
+                {delBusy ? "Deleting…" : "Delete permanently"}
+              </button>
+              <button
+                onClick={() => setDelOpen(false)}
+                disabled={delBusy}
+                className="px-4 py-2 rounded-xl border border-border text-sm text-muted"
               >
                 Close
               </button>

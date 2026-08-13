@@ -236,6 +236,13 @@ export default function DeviceDetailPage() {
       </DataState>
 
       {device && (
+        <DeleteScreenshots
+          deviceId={id}
+          onDeleted={() => setRefreshTick((t) => t + 1)}
+        />
+      )}
+
+      {device && (
         <ClearHistory
           deviceId={id}
           apps={(act?.byApp ?? []).map((a) => a.app)}
@@ -243,6 +250,127 @@ export default function DeviceDetailPage() {
         />
       )}
     </Page>
+  );
+}
+
+// Delete this device's screenshots — all of them, or within a chosen date range.
+// Deletes from Cloudflare R2 and the database in one call.
+function DeleteScreenshots({
+  deviceId,
+  onDeleted,
+}: {
+  deviceId: string;
+  onDeleted: () => void;
+}) {
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [confirm, setConfirm] = useState(false);
+  const [msg, setMsg] = useState("");
+
+  // Convert the yyyy-mm-dd inputs to UTC ms. `to` is inclusive of the whole day.
+  const fromMs = from ? Date.parse(from + "T00:00:00.000Z") : undefined;
+  const toMs = to ? Date.parse(to + "T23:59:59.999Z") : undefined;
+  const rangeInvalid =
+    fromMs !== undefined && toMs !== undefined && fromMs > toMs;
+  const hasRange = fromMs !== undefined || toMs !== undefined;
+
+  async function run() {
+    setBusy(true);
+    setMsg("");
+    try {
+      const res = await api.deleteScreenshots({
+        deviceId,
+        from: fromMs,
+        to: toMs,
+      });
+      setMsg(
+        `Deleted ${res.deleted.toLocaleString()} screenshots (${res.freedFromR2.toLocaleString()} removed from R2).`
+      );
+      setConfirm(false);
+      onDeleted();
+    } catch (e: any) {
+      setMsg(e.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const label = hasRange
+    ? `screenshots${from ? ` from ${from}` : ""}${to ? ` to ${to}` : ""}`
+    : "ALL screenshots for this device";
+
+  return (
+    <Card
+      title="Delete screenshots"
+      subtitle="Permanently remove this device's screenshots from R2 and the database"
+      className="mt-4 border-crit/20"
+    >
+      {msg && <p className="text-sm text-brand mb-3">{msg}</p>}
+      <div className="flex flex-wrap items-end gap-3">
+        <div>
+          <label className="block text-[11px] uppercase tracking-wide text-faint mb-1">
+            From (optional)
+          </label>
+          <input
+            type="date"
+            value={from}
+            onChange={(e) => {
+              setFrom(e.target.value);
+              setConfirm(false);
+            }}
+            className="px-3 py-2 rounded-xl bg-surface-2 border border-border text-sm text-ink outline-none"
+          />
+        </div>
+        <div>
+          <label className="block text-[11px] uppercase tracking-wide text-faint mb-1">
+            To (optional)
+          </label>
+          <input
+            type="date"
+            value={to}
+            onChange={(e) => {
+              setTo(e.target.value);
+              setConfirm(false);
+            }}
+            className="px-3 py-2 rounded-xl bg-surface-2 border border-border text-sm text-ink outline-none"
+          />
+        </div>
+
+        {confirm ? (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={run}
+              disabled={busy}
+              className="px-3.5 py-2 rounded-xl bg-crit text-white text-xs font-semibold disabled:opacity-50"
+            >
+              {busy ? "Deleting…" : `Confirm — delete ${label}`}
+            </button>
+            <button
+              onClick={() => setConfirm(false)}
+              className="px-3 py-2 rounded-xl border border-border text-xs text-muted"
+            >
+              Cancel
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setConfirm(true)}
+            disabled={rangeInvalid}
+            className="px-3.5 py-2 rounded-xl text-xs font-semibold text-crit border border-crit/30 bg-crit/10 hover:bg-crit/20 disabled:opacity-40 transition-colors"
+          >
+            Delete {label}
+          </button>
+        )}
+      </div>
+      {rangeInvalid && (
+        <p className="text-xs text-crit mt-2">“From” must be before “To”.</p>
+      )}
+      <p className="text-[11px] text-faint mt-3">
+        Leave both dates empty to delete every screenshot for this device. Dates are
+        inclusive (UTC).
+      </p>
+    </Card>
   );
 }
 
